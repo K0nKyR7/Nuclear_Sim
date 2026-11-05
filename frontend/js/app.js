@@ -574,16 +574,12 @@ class ScadaApp {
       });
     });
 
-    // Откидная защитная крышка АЗ-5
+    // Откидная защитная крышка АЗ-5 (реалистичный 3D механизм)
     const cover = document.getElementById('az5Cover');
     if (cover) {
       cover.addEventListener('click', (e) => {
         e.stopPropagation();
         const isOpen = cover.classList.toggle('open');
-        const label = cover.querySelector('.cover-label');
-        if (label) {
-          label.textContent = isOpen ? '▲ ЗАКРЫТЬ КРЫШКУ ▲' : '▲ ПОДНЯТЬ КРЫШКУ АЗ-5 ▲';
-        }
         if (window.plantAudio) window.plantAudio.playAz5CoverFlip(isOpen);
       });
     }
@@ -597,8 +593,6 @@ class ScadaApp {
           // Если крышка закрыта, первый клик с щелчком откидывает защитную крышку
           e.stopPropagation();
           cover.classList.add('open');
-          const label = cover.querySelector('.cover-label');
-          if (label) label.textContent = '▲ ЗАКРЫТЬ КРЫШКУ ▲';
           if (window.plantAudio) window.plantAudio.playAz5CoverFlip(true);
           return;
         }

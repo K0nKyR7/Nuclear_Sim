@@ -751,14 +751,22 @@
             <span class="collar-text collar-bottom">EMERGENCY STOP • АЗ-5</span>
           </div>
           <div class="az5-cover-wrap">
-            <!-- ОТКИДНАЯ ЗАЩИТНАЯ КРЫШКА С ПЕТЛЯМИ И ПРЕДУПРЕЖДЕНИЕМ -->
-            <div id="az5Cover" class="az5-cover" title="Нажмите, чтобы откинуть защитную крышку">
+            <!-- РЕАЛИСТИЧНАЯ 3D ОТКИДНАЯ ЗАЩИТНАЯ КРЫШКА НА ПЕТЛЕ -->
+            <div id="az5Cover" class="az5-cover" title="Нажмите, чтобы откинуть или закрыть крышку">
               <div class="cover-hinge top-hinge">
                 <div class="hinge-pin"></div>
               </div>
-              <div class="cover-hazard-stripes"></div>
-              <div class="cover-label">▲ ПОДНЯТЬ КРЫШКУ АЗ-5 ▲</div>
-              <div class="tamper-seal">ПЛОМБА № 742</div>
+              <!-- Лицевая сторона (когда закрыта) -->
+              <div class="az5-cover-face az5-cover-front">
+                <div class="cover-hazard-stripes"></div>
+                <div class="cover-label">▲ ПРЕДОХРАНИТЕЛЬ АЗ-5 ▲</div>
+                <div class="tamper-seal">ПЛОМБА № 742</div>
+              </div>
+              <!-- Внутренняя сторона (когда откинута вверх) -->
+              <div class="az5-cover-face az5-cover-back">
+                <div class="cover-rubber-stop"></div>
+                <div class="cover-back-label">▼ ЗАКРЫТЬ КРЫШКУ ▼</div>
+              </div>
             </div>
 
             <!-- МАССИВНАЯ НЕПРОЗРАЧНАЯ КРАСНАЯ ГРИБОВИДНАЯ КНОПКА АЗ-5 -->

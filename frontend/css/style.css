@@ -1559,19 +1559,40 @@ footer.operator-desk-apron {
   position: relative;
   width: 126px;
   height: 70px;
-  perspective: 700px;
+  perspective: 900px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
 }
 
-/* Откидная защитная крышка */
+/* Реалистичная двухсторонняя 3D откидная крышка на петле */
 .az5-cover {
   position: absolute;
   top: 0;
   width: 126px;
   height: 70px;
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  z-index: 25;
+  transition: transform 0.4s cubic-bezier(0.34, 1.35, 0.64, 1), box-shadow 0.35s ease;
+}
+
+.cover-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 1. Лицевая сторона (когда крышка опущена) */
+.az5-cover-front {
   background-color: #ca8a04;
   background-image: 
     linear-gradient(180deg, #facc15 0%, #eab308 30%, #a16207 100%),
@@ -1579,39 +1600,69 @@ footer.operator-desk-apron {
   border: 2px solid #fef08a;
   border-top-color: #ffffff;
   border-bottom-color: #713f12;
-  border-radius: 6px;
-  cursor: pointer;
-  z-index: 25;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  box-shadow: 
+    0 6px 14px #000000,
+    inset 0 1.5px 2px #ffffff,
+    inset 0 -2px 3px #713f12;
   color: #000000;
   font-size: 9.5px;
   font-weight: 900;
   letter-spacing: 0.6px;
-  transform-origin: top center;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-  box-shadow: 
-    0 6px 12px #000000,
-    inset 0 1px 2px #ffffff,
-    inset 0 -2px 3px #713f12;
+  z-index: 2;
+  transform: rotateX(0deg);
 }
 
+/* 2. Внутренняя сторона (когда крышка откинута назад) */
+.az5-cover-back {
+  background: linear-gradient(180deg, #1e2631 0%, #111720 50%, #090e15 100%);
+  border: 2px solid #334356;
+  border-top-color: #4f6785;
+  border-bottom-color: #080c10;
+  box-shadow: 
+    inset 0 2px 6px #000000,
+    0 -8px 16px rgba(0, 0, 0, 0.7);
+  transform: rotateY(180deg) rotateZ(180deg);
+  z-index: 1;
+  color: #94a3b8;
+}
+
+/* Резиновый амортизирующий демпфер на изнанке крышки */
+.cover-rubber-stop {
+  width: 76px;
+  height: 24px;
+  background: radial-gradient(ellipse at 50% 50%, #181d24 0%, #0c0f14 80%, #05070a 100%);
+  border: 1.5px solid #232b36;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 3px #000000, 0 1px 2px rgba(255, 255, 255, 0.1);
+  margin-bottom: 5px;
+}
+
+.cover-back-label {
+  font-family: var(--font-gost);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #38bdf8;
+  text-shadow: 0 0 4px rgba(56, 189, 248, 0.5);
+}
+
+/* Петля шарнира */
 .cover-hinge {
   position: absolute;
   top: -6px;
+  left: calc(50% - 28px);
   width: 56px;
-  height: 8px;
+  height: 9px;
   background: linear-gradient(180deg, #cbd5e1 0%, #64748b 45%, #1e293b 100%);
   border: 1px solid #94a3b8;
   border-radius: 4px;
-  box-shadow: 0 2px 4px #000000;
+  box-shadow: 0 2px 5px #000000;
+  z-index: 30;
 }
 
 .cover-hinge .hinge-pin {
   position: absolute;
-  top: 2px;
+  top: 2.5px;
   left: 4px;
   right: 4px;
   height: 2px;
@@ -1622,9 +1673,9 @@ footer.operator-desk-apron {
 
 .cover-hazard-stripes {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  right: 2px;
+  top: 3px;
+  left: 3px;
+  right: 3px;
   height: 7px;
   background: repeating-linear-gradient(
     45deg,
@@ -1637,7 +1688,7 @@ footer.operator-desk-apron {
 }
 
 .cover-label {
-  margin-top: 8px;
+  margin-top: 10px;
   font-family: var(--font-gost);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
@@ -1654,9 +1705,10 @@ footer.operator-desk-apron {
   letter-spacing: 0.5px;
 }
 
+/* При открытии крышка поворачивается назад на петле на 108 градусов */
 .az5-cover.open {
-  transform: rotateX(130deg) translateY(-22px);
-  box-shadow: 0 -12px 24px rgba(234, 179, 8, 0.6), 0 4px 10px #000000;
+  transform: rotateX(108deg) translateY(-14px) translateZ(8px);
+  box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.8), 0 4px 8px #000000;
 }
 
 /* Массивная красная грибовидная кнопка АЗ-5 */

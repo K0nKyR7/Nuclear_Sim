@@ -2630,6 +2630,13 @@ class PlantMimic {
     this.isDragging = false;
   }
 
+  notifyZoomChange() {
+    const lbl = document.getElementById('btnZoomReset');
+    if (lbl) {
+      lbl.textContent = `${Math.round(this.zoom * 100)}%`;
+    }
+  }
+
   handleWheel(e) {
     if (!this.canvas) return;
     e.preventDefault();
@@ -2644,12 +2651,14 @@ class PlantMimic {
     this.panX = mouseX - (mouseX - this.panX) * (newZoom / this.zoom);
     this.panY = mouseY - (mouseY - this.panY) * (newZoom / this.zoom);
     this.zoom = newZoom;
+    this.notifyZoomChange();
   }
 
   resetView() {
     this.zoom = 1.0;
     this.panX = 0;
     this.panY = 0;
+    this.notifyZoomChange();
   }
 
   zoomIn() {
@@ -2659,6 +2668,7 @@ class PlantMimic {
     this.panX = (w / 2) - ((w / 2) - this.panX) * (newZoom / this.zoom);
     this.panY = (h / 2) - ((h / 2) - this.panY) * (newZoom / this.zoom);
     this.zoom = newZoom;
+    this.notifyZoomChange();
   }
 
   zoomOut() {
@@ -2668,6 +2678,7 @@ class PlantMimic {
     this.panX = (w / 2) - ((w / 2) - this.panX) * (newZoom / this.zoom);
     this.panY = (h / 2) - ((h / 2) - this.panY) * (newZoom / this.zoom);
     this.zoom = newZoom;
+    this.notifyZoomChange();
   }
 
   toggleHud() {
