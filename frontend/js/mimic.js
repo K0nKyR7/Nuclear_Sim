@@ -44,6 +44,14 @@ class PlantMimic {
     this.renderedAssemblies = [];
     this.renderedRcps = [];
     this.coreAssemblies = this.generateCoreAssemblies();
+    this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.isDragging = false;
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+    this.hasDragged = false;
+    this.hudCollapsed = false;
 
     window.addEventListener('resize', () => this.resize());
     if (typeof ResizeObserver !== 'undefined' && this.canvas && this.canvas.parentElement) {
@@ -52,10 +60,15 @@ class PlantMimic {
     }
     this.resize();
 
-    // Интерактивные клики и наведение на оборудование
+    // Интерактивные клики, зум и перетаскивание (Pan & Zoom)
     if (this.canvas) {
       this.canvas.addEventListener('click', (e) => this.handleClick(e));
       this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+      this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+      this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+      this.canvas.addEventListener('mouseleave', (e) => this.handleMouseUp(e));
+      this.canvas.addEventListener('wheel', (e) => this.handleWheel(e), { passive: false });
+      this.canvas.addEventListener('dblclick', (e) => this.resetView());
     }
   }
 
@@ -284,6 +297,9 @@ class PlantMimic {
       if (this.viewMode === 'core') {
         this.drawCoreCrossSection(w, h, s);
       } else {
+        ctx.save();
+        if (ctx.translate) ctx.translate(this.panX, this.panY);
+        ctx.scale(this.zoom, this.zoom);
         // Опорные координаты агрегатов технологической схемы
         const rx = w * 0.18;    // Реактор ВВЭР-1000
         const ry = h * 0.50;
@@ -335,6 +351,21 @@ class PlantMimic {
 
         // 9. Архитектура 4-х петель, САОЗ ГЕ-1..4 и арматура ГОСТ (БРУ-К, БРУ-А)
         this.drawFourLoopsAndSaoz(rx, ry, rw, rh, sgx, sgy, sgw, sgh, pzx, pzy, condx, condy, turbx, turby, s);
+        ctx.restore();
+
+        // Панель навигации зума в левом нижнем углу
+        const zoomPct = Math.round(this.zoom * 100);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(20, h - 36, 320, 26, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '10px Consolas, monospace';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(`МАСШТАБ: ${zoomPct}% • [Колесо: Зум | Зажать ЛКМ: Двигать]`, 28, h - 20);
       }
 
       // 10. Наложение CRT растровых строк в режиме люминофора P31
@@ -2151,21 +2182,35 @@ class PlantMimic {
     // 0. Фоновая сетка
     this.drawBackgroundGrid(w, h);
 
-    // Заголовок картограммы
-    ctx.font = 'bold 13px Consolas, monospace';
-    ctx.fillStyle = (this.crtMode === 'p31') ? '#34d399' : '#38bdf8';
-    ctx.textAlign = 'left';
-    ctx.fillText('КАРТОГРАММА АКТИВНОЙ ЗОНЫ ВВЭР-1000 • 163 ТВС-2М (СУЗ: 61 КЛАСТЕР)', 28, 28);
+    const isP31 = (this.crtMode === 'p31');
+    const isScrammed = (s.state === 'SCRAMMED');
+    const pRel = Math.max(0.01, s.relative_power_pct / 100.0);
+    const rodPos = Math.max(0, Math.min(1.0, s.rod_position_pct / 100.0));
 
-    const coreX = w * 0.38;
-    const coreY = h * 0.52;
-    const maxR = Math.min(w * 0.33, h * 0.42);
-    const hexR = maxR / 7.6;
+    // Параметры правой HUD панели
+    const hudW = this.hudCollapsed ? 38 : Math.max(300, Math.min(380, Math.round(w * 0.32)));
+    const hudX = Math.round(w - hudW - 12);
+    const hudY = 16;
+    const hudH = Math.round(h - 32);
 
-    // 1. Корпус реактора (горизонтальный разрез по активной зоне)
-    // 1.1 Внешняя обечайка из кованой стали 15Х2НМФА
+    // Доступная область для активной зоны
+    const availW = hudX - 20;
+    const availH = h - 55;
+    const maxDim = Math.min(availW, availH);
+    // Расчет радиуса ТВС так, чтобы все 163 сборки от r=-7 до r=7 гарантированно умещались
+    const hexR = Math.max(8.0, Math.floor(maxDim / 24.5));
+    const baseCoreX = Math.round(availW / 2 + 10);
+    const baseCoreY = Math.round(availH / 2 + 35);
+    const maxR = hexR * 7.4;
+
+    // === 1. ОТРИСОВКА КАРТОГРАММЫ С УЧЕТОМ ЗУМА И ПАНОРАМИРОВАНИЯ ===
+    ctx.save();
+    if (ctx.translate) ctx.translate(this.panX, this.panY);
+    ctx.scale(this.zoom, this.zoom);
+
+    // 1.1 Корпус реактора (горизонтальный разрез по активной зоне)
     const rVessel = maxR * 1.18;
-    const vesselGrad = ctx.createRadialGradient(coreX, coreY, maxR * 1.02, coreX, coreY, rVessel);
+    const vesselGrad = ctx.createRadialGradient(baseCoreX, baseCoreY, maxR * 1.02, baseCoreX, baseCoreY, rVessel);
     vesselGrad.addColorStop(0, '#2d3b4b');
     vesselGrad.addColorStop(0.5, '#475569');
     vesselGrad.addColorStop(1, '#0f172a');
@@ -2173,60 +2218,60 @@ class PlantMimic {
     ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(coreX, coreY, rVessel, 0, Math.PI * 2);
+    ctx.arc(baseCoreX, baseCoreY, rVessel, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // 1.2 Внутренняя антикоррозионная наплавка 08Х18Н10Т (8 мм)
+    // Внутренняя наплавка
     const rClad = maxR * 1.04;
     ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(coreX, coreY, rClad, 0, Math.PI * 2);
+    ctx.arc(baseCoreX, baseCoreY, rClad, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 1.3 Опускной кольцевой коридор (downcomer) с охлаждающей водой
+    // Опускной кольцевой коридор
     const rDown = maxR * 0.96;
-    ctx.fillStyle = (this.crtMode === 'p31') ? 'rgba(6, 78, 59, 0.4)' : 'rgba(14, 116, 144, 0.35)';
+    ctx.fillStyle = isP31 ? 'rgba(6, 78, 59, 0.4)' : 'rgba(14, 116, 144, 0.35)';
     ctx.beginPath();
-    ctx.arc(coreX, coreY, rClad, 0, Math.PI * 2);
-    ctx.arc(coreX, coreY, rDown, 0, Math.PI * 2, true);
+    ctx.arc(baseCoreX, baseCoreY, rClad, 0, Math.PI * 2);
+    ctx.arc(baseCoreX, baseCoreY, rDown, 0, Math.PI * 2, true);
     ctx.fill();
 
-    // 1.4 Шахта реактора (08Х18Н10Т)
+    // Шахта реактора
     const rBarrel = maxR * 0.90;
     ctx.strokeStyle = '#475569';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(coreX, coreY, rBarrel, 0, Math.PI * 2);
+    ctx.arc(baseCoreX, baseCoreY, rBarrel, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 1.5 Выгородка активной зоны (нейтронный тепловой экран)
+    // Выгородка активной зоны
     ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.arc(coreX, coreY, maxR * 0.88, 0, Math.PI * 2);
+    ctx.arc(baseCoreX, baseCoreY, maxR * 0.88, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 2. Отрисовка 163 гексагональных ТВС
+    // 1.2 Отрисовка 163 гексагональных ТВС
     this.renderedAssemblies = [];
-    const isP31 = (this.crtMode === 'p31');
-    const isScrammed = (s.state === 'SCRAMMED');
-    const pRel = Math.max(0.01, s.relative_power_pct / 100.0);
-    const rodPos = Math.max(0, Math.min(1.0, s.rod_position_pct / 100.0));
-
     let selAsm = null;
 
     for (let i = 0; i < this.coreAssemblies.length; i++) {
       const asm = this.coreAssemblies[i];
-      const cx = coreX + hexR * Math.sqrt(3) * (asm.q + asm.r * 0.5);
-      const cy = coreY + hexR * 1.5 * asm.r;
+      const cx = baseCoreX + hexR * Math.sqrt(3) * (asm.q + asm.r * 0.5);
+      const cy = baseCoreY + hexR * 1.5 * asm.r;
+
+      // Экранные координаты с учетом зума и панорамирования для точных кликов
+      const screenX = cx * this.zoom + this.panX;
+      const screenY = cy * this.zoom + this.panY;
+      const screenR = hexR * this.zoom;
 
       this.renderedAssemblies.push({
         id: asm.id,
-        cx,
-        cy,
-        r: hexR,
+        cx: screenX,
+        cy: screenY,
+        r: screenR,
         asm
       });
 
@@ -2253,19 +2298,19 @@ class PlantMimic {
         fillColor = 'rgba(127, 29, 29, 0.7)';
       } else {
         if (kq < 0.75) {
-          fillColor = 'rgba(14, 165, 233, 0.8)';
+          fillColor = 'rgba(14, 165, 233, 0.85)';
         } else if (kq < 1.0) {
-          fillColor = 'rgba(34, 197, 94, 0.8)';
+          fillColor = 'rgba(34, 197, 94, 0.85)';
         } else if (kq < 1.15) {
-          fillColor = 'rgba(234, 179, 8, 0.85)';
+          fillColor = 'rgba(234, 179, 8, 0.88)';
         } else if (kq < 1.25) {
-          fillColor = 'rgba(249, 115, 22, 0.85)';
+          fillColor = 'rgba(249, 115, 22, 0.88)';
         } else {
-          fillColor = 'rgba(239, 68, 68, 0.9)';
+          fillColor = 'rgba(239, 68, 68, 0.92)';
         }
       }
 
-      // Отрисовка гексагона
+      // Отрисовка гексагона ТВС
       ctx.beginPath();
       for (let k = 0; k < 6; k++) {
         const angle = k * Math.PI / 3 - Math.PI / 6;
@@ -2286,63 +2331,107 @@ class PlantMimic {
       if (asm.suzGroup > 0) {
         ctx.fillStyle = (asm.suzGroup === 10) ? '#f59e0b' : '#f8fafc';
         ctx.beginPath();
-        ctx.arc(cx, cy - hexR * 0.38, (asm.suzGroup === 10) ? 2.8 : 2.0, 0, Math.PI * 2);
+        ctx.arc(cx, cy - hexR * 0.38, (asm.suzGroup === 10) ? Math.max(2.5, hexR * 0.22) : Math.max(1.8, hexR * 0.16), 0, Math.PI * 2);
         ctx.fill();
       }
 
       // Номер ТВС
-      if (hexR >= 9) {
-        ctx.font = 'bold ' + Math.max(7, Math.floor(hexR * 0.42)) + 'px Consolas, monospace';
+      if (hexR >= 8) {
+        ctx.font = 'bold ' + Math.max(7, Math.floor(hexR * 0.44)) + 'px Consolas, monospace';
         ctx.fillStyle = isP31 ? '#ecfdf5' : '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(asm.id, cx, cy + Math.floor(hexR * 0.18));
+        ctx.fillText(asm.id, cx, cy + Math.floor(hexR * 0.20));
       }
 
       // Подсветка при наведении или выборе
       if (asm.id === this.selectedAssemblyId) {
         ctx.strokeStyle = '#fbbf24';
-        ctx.lineWidth = 2.8;
+        ctx.lineWidth = 3.0;
         ctx.stroke();
       } else if (asm.id === this.hoveredAssemblyId) {
         ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.0;
+        ctx.lineWidth = 2.2;
         ctx.stroke();
       }
     }
+
+    ctx.restore(); // Сброс трансформации зума
 
     if (!selAsm && this.coreAssemblies.length > 0) {
       selAsm = this.coreAssemblies[81];
     }
 
-    // 3. ПРАВАЯ ИНЖЕНЕРНАЯ ПАНЕЛЬ ТЕЛЕМЕТРИИ
-    const hudX = Math.round(w * 0.71);
-    const hudW = Math.round(w - hudX - 16);
-    const hudY = 24;
-    const hudH = Math.round(h - 48);
+    // Заголовок картограммы и подсказка
+    ctx.font = 'bold 13px Consolas, monospace';
+    ctx.fillStyle = isP31 ? '#34d399' : '#38bdf8';
+    ctx.textAlign = 'left';
+    ctx.fillText('КАРТОГРАММА АКТИВНОЙ ЗОНЫ ВВЭР-1000 • 163 ТВС-2М (СУЗ: 61 КЛАСТЕР)', 22, 24);
 
+    // Панель навигации зума в левом нижнем углу
+    const zoomPct = Math.round(this.zoom * 100);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(20, h - 36, 320, 26, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = '10px Consolas, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(`МАСШТАБ: ${zoomPct}% • [Колесо: Зум | Зажать ЛКМ: Двигать]`, 28, h - 20);
+
+    // === 2. ПРАВАЯ ИНЖЕНЕРНАЯ ПАНЕЛЬ ТЕЛЕМЕТРИИ (HUD) ===
     ctx.fillStyle = '#0a0f16';
     ctx.strokeStyle = '#2d3b4b';
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(hudX, hudY, hudW, hudH, 8);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = isP31 ? '#34d399' : '#38bdf8';
-    ctx.font = 'bold 11px Consolas, monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('ТЕПЛОФИЗИКА И БЕЗОПАСНОСТЬ', hudX + 14, hudY + 22);
+    // Кнопка сворачивания/разворачивания
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(hudX + 6, hudY + 6, 26, 22, 4);
+    ctx.fill();
+    ctx.stroke();
 
-    let curY = hudY + 44;
+    ctx.font = 'bold 12px Consolas, monospace';
+    ctx.fillStyle = '#38bdf8';
+    ctx.textAlign = 'center';
+    ctx.fillText(this.hudCollapsed ? '◀' : '▶', hudX + 19, hudY + 21);
+
+    if (this.hudCollapsed) {
+      // В свернутом состоянии отображаем вертикальный компактный лейбл
+      ctx.save();
+      ctx.translate(hudX + 22, hudY + 120);
+      ctx.rotate(-Math.PI / 2);
+      ctx.font = 'bold 11px Consolas, monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('ТЕПЛОФИЗИКА И БЕЗОПАСНОСТЬ [РАЗВЕРНУТЬ]', 0, 0);
+      ctx.restore();
+      ctx.restore();
+      return;
+    }
+
+    ctx.fillStyle = isP31 ? '#34d399' : '#38bdf8';
+    ctx.font = 'bold 13px Consolas, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('ТЕПЛОФИЗИКА И БЕЗОПАСНОСТЬ', hudX + 40, hudY + 22);
+
+    let curY = hudY + 48;
 
     // Запас до кипения (Subcooling margin)
     const tSat = (typeof s.t_sat_1k_c === 'number') ? s.t_sat_1k_c : (179.9 * Math.pow(Math.max(0.1, s.pressure_1k_mpa), 0.239));
     const subcool = (typeof s.subcooling_margin_c === 'number') ? s.subcooling_margin_c : Math.max(0, tSat - s.t_hot_c);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px Consolas, monospace';
+    ctx.font = 'bold 10.5px Consolas, monospace';
     ctx.fillText('ЗАПАС ДО КИПЕНИЯ (ΔTsubcool = Tsat - Tгор):', hudX + 14, curY);
-    curY += 18;
+    curY += 20;
 
     let subcoolColor = '#22c55e';
     let subcoolStatus = 'НОРМА (> 10°C)';
@@ -2355,86 +2444,86 @@ class PlantMimic {
     }
 
     ctx.fillStyle = subcoolColor;
-    ctx.font = 'bold 16px Consolas, monospace';
+    ctx.font = 'bold 18px Consolas, monospace';
     ctx.fillText(`${subcool.toFixed(1)} °C`, hudX + 14, curY);
 
-    ctx.font = 'bold 9.5px Consolas, monospace';
-    ctx.fillText(`[${subcoolStatus}]`, hudX + 90, curY - 2);
-    curY += 16;
+    ctx.font = 'bold 10px Consolas, monospace';
+    ctx.fillText(`[${subcoolStatus}]`, hudX + 96, curY - 2);
+    curY += 18;
 
     ctx.fillStyle = '#64748b';
-    ctx.font = '8.5px Consolas, monospace';
-    ctx.fillText(`Tsat(P1 = ${s.pressure_1k_mpa.toFixed(2)} МПа) = ${tSat.toFixed(1)}°C | Tгор = ${s.t_hot_c.toFixed(1)}°C`, hudX + 14, curY);
-    curY += 24;
+    ctx.font = '9.5px Consolas, monospace';
+    ctx.fillText(`Tsat = ${tSat.toFixed(1)}°C (при P1=${s.pressure_1k_mpa.toFixed(2)} МПа) | Tгор = ${s.t_hot_c.toFixed(1)}°C`, hudX + 14, curY);
+    curY += 26;
 
     // Концентрация бора
     const boronPpm = (typeof s.boron_ppm === 'number') ? s.boron_ppm : 550.0;
     const boronG = boronPpm * 0.00571;
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px Consolas, monospace';
+    ctx.font = 'bold 10.5px Consolas, monospace';
     ctx.fillText('КОНЦЕНТРАЦИЯ БОРА (C_B):', hudX + 14, curY);
-    curY += 16;
+    curY += 18;
 
     ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 13px Consolas, monospace';
+    ctx.font = 'bold 15px Consolas, monospace';
     ctx.fillText(`${boronPpm.toFixed(0)} ppm`, hudX + 14, curY);
-    ctx.font = '9px Consolas, monospace';
+    ctx.font = '10px Consolas, monospace';
     ctx.fillStyle = '#94a3b8';
-    ctx.fillText(`(${boronG.toFixed(2)} г/дм³ H3BO3)`, hudX + 95, curY);
-    curY += 24;
+    ctx.fillText(`(${boronG.toFixed(2)} г/дм³ H3BO3)`, hudX + 105, curY);
+    curY += 26;
 
     // Коэффициенты неравномерности
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px Consolas, monospace';
+    ctx.font = 'bold 10px Consolas, monospace';
     ctx.fillText('НЕРАВНОМЕРНОСТЬ НЕЙТРОННОГО ПОЛЯ (Kq):', hudX + 14, curY);
-    curY += 15;
-
-    ctx.fillStyle = '#f1f5f9';
-    ctx.font = '9px Consolas, monospace';
-    ctx.fillText(`Kq_max = 1.31 (доп. 1.35) | Kr = 1.18`, hudX + 14, curY);
-    curY += 13;
-    ctx.fillText(`Kv_max = 1.54 (доп. 1.65) | РГ (Гр.10): ${s.rod_position_pct.toFixed(1)}%`, hudX + 14, curY);
     curY += 16;
 
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '10px Consolas, monospace';
+    ctx.fillText(`Kq_max = 1.31 (доп. 1.35) | Kr = 1.18`, hudX + 14, curY);
+    curY += 15;
+    ctx.fillText(`Kv_max = 1.54 (доп. 1.65) | РГ (Гр.10): ${s.rod_position_pct.toFixed(1)}%`, hudX + 14, curY);
+    curY += 18;
+
     // Цветовая шкала тепловыделения Kq
-    const barW = Math.max(80, hudW - 28);
+    const barW = Math.max(100, hudW - 28);
     const segW = barW / 5.0;
     const kqColors = ['#0ea5e9', '#22c55e', '#eab308', '#f97316', '#ef4444'];
     const kqLabels = ['<0.75', '0.75', '1.00', '1.15', '>1.25'];
     for (let c = 0; c < 5; c++) {
       ctx.fillStyle = kqColors[c];
-      ctx.fillRect(hudX + 14 + c * segW, curY, segW - 1, 5);
+      ctx.fillRect(hudX + 14 + c * segW, curY, segW - 1, 6);
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '7px Consolas, monospace';
+      ctx.font = '8px Consolas, monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(kqLabels[c], hudX + 14 + c * segW, curY + 12);
+      ctx.fillText(kqLabels[c], hudX + 14 + c * segW, curY + 15);
     }
-    curY += 20;
+    curY += 26;
 
     // САОЗ статус
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px Consolas, monospace';
+    ctx.font = 'bold 10px Consolas, monospace';
     ctx.fillText('САОЗ (ГИДРОЕМКОСТИ 1..4):', hudX + 14, curY);
-    curY += 15;
+    curY += 16;
 
     if (s.saoz_active || s.pressure_1k_mpa < 6.0) {
       ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 10px Consolas, monospace';
+      ctx.font = 'bold 12px Consolas, monospace';
       ctx.fillText(`АКТИВНЫЙ ВПРЫСК: G = ${s.saoz_flow_kg_s.toFixed(0)} кг/с`, hudX + 14, curY);
-      curY += 13;
+      curY += 15;
       ctx.fillStyle = '#fca5a5';
-      ctx.font = '8.5px Consolas, monospace';
+      ctx.font = '9.5px Consolas, monospace';
       ctx.fillText(`Впрыск бора 2800 ppm при P1 < 6.0 МПа`, hudX + 14, curY);
     } else {
       ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 9.5px Consolas, monospace';
-      ctx.fillText('ДЕЖУРНЫЙ РЕЖИМ (P_N2 = 6.0 МПа, 4x60 м³)', hudX + 14, curY);
-      curY += 13;
+      ctx.font = 'bold 11px Consolas, monospace';
+      ctx.fillText('ДЕЖУРНЫЙ РЕЖИМ (P_N2 = 6.0 МПа)', hudX + 14, curY);
+      curY += 15;
       ctx.fillStyle = '#64748b';
-      ctx.font = '8.5px Consolas, monospace';
+      ctx.font = '9.5px Consolas, monospace';
       ctx.fillText('Обратные клапаны закрыты давлением 1К', hudX + 14, curY);
     }
-    curY += 24;
+    curY += 26;
 
     // Выбранная ТВС
     if (selAsm) {
@@ -2444,12 +2533,12 @@ class PlantMimic {
       ctx.moveTo(hudX + 10, curY);
       ctx.lineTo(hudX + hudW - 10, curY);
       ctx.stroke();
-      curY += 14;
+      curY += 16;
 
       ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 11px Consolas, monospace';
+      ctx.font = 'bold 12.5px Consolas, monospace';
       ctx.fillText(`ИНСПЕКЦИЯ: ТВС-2М №${selAsm.id}`, hudX + 14, curY);
-      curY += 16;
+      curY += 18;
 
       let selKq = 1.25 * (1.0 - 0.42 * Math.pow(selAsm.rNorm, 1.8));
       if (selAsm.suzGroup === 10) selKq *= (0.35 + 0.65 * rodPos);
@@ -2460,17 +2549,17 @@ class PlantMimic {
       const tOut = s.t_cold_c + (s.t_hot_c - s.t_cold_c) * selKq * pRel;
 
       ctx.fillStyle = '#e2e8f0';
-      ctx.font = '9px Consolas, monospace';
+      ctx.font = '10px Consolas, monospace';
       ctx.fillText(`Координаты: [q=${selAsm.q}, r=${selAsm.r}]`, hudX + 14, curY);
-      curY += 14;
+      curY += 15;
       ctx.fillText(`Коэфф. мощности Kq: ${selKq.toFixed(2)}`, hudX + 14, curY);
-      curY += 14;
+      curY += 15;
       ctx.fillText(`T теплоносителя на выходе: ${tOut.toFixed(1)}°C`, hudX + 14, curY);
-      curY += 14;
+      curY += 15;
       ctx.fillText(`Обогащение: ${selAsm.enrichment}% U-235`, hudX + 14, curY);
-      curY += 14;
+      curY += 15;
       ctx.fillText(`Выгорание: ${selAsm.burnup} МВт·сут/кгU`, hudX + 14, curY);
-      curY += 14;
+      curY += 15;
 
       let suzDesc = 'Отсутствует';
       if (selAsm.suzGroup === 10) suzDesc = 'Группа 10 (Рабочая группа СУЗ)';
@@ -2480,7 +2569,6 @@ class PlantMimic {
 
     ctx.restore();
   }
-
   /**
    * Растровые строки кинескопа ЭЛТ в режиме люминофора P31
    */
@@ -2494,11 +2582,83 @@ class PlantMimic {
     ctx.restore();
   }
 
+
+  handleMouseDown(e) {
+    if (!this.canvas) return;
+    this.isDragging = true;
+    this.hasDragged = false;
+    this.dragStartX = e.clientX - this.panX;
+    this.dragStartY = e.clientY - this.panY;
+  }
+
+  handleMouseUp(e) {
+    this.isDragging = false;
+  }
+
+  handleWheel(e) {
+    if (!this.canvas) return;
+    e.preventDefault();
+    const rect = this.canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+    const newZoom = Math.max(0.5, Math.min(4.0, this.zoom * zoomFactor));
+
+    // Масштабирование относительно точки курсора
+    this.panX = mouseX - (mouseX - this.panX) * (newZoom / this.zoom);
+    this.panY = mouseY - (mouseY - this.panY) * (newZoom / this.zoom);
+    this.zoom = newZoom;
+  }
+
+  resetView() {
+    this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+  }
+
+  zoomIn() {
+    const newZoom = Math.min(4.0, this.zoom * 1.25);
+    const w = this.width || 800;
+    const h = this.height || 500;
+    this.panX = (w / 2) - ((w / 2) - this.panX) * (newZoom / this.zoom);
+    this.panY = (h / 2) - ((h / 2) - this.panY) * (newZoom / this.zoom);
+    this.zoom = newZoom;
+  }
+
+  zoomOut() {
+    const newZoom = Math.max(0.5, this.zoom * 0.8);
+    const w = this.width || 800;
+    const h = this.height || 500;
+    this.panX = (w / 2) - ((w / 2) - this.panX) * (newZoom / this.zoom);
+    this.panY = (h / 2) - ((h / 2) - this.panY) * (newZoom / this.zoom);
+    this.zoom = newZoom;
+  }
+
+  toggleHud() {
+    this.hudCollapsed = !this.hudCollapsed;
+  }
+
   handleClick(e) {
     if (!this.canvas || !this.width || !this.height) return;
+    if (this.hasDragged) {
+      this.hasDragged = false;
+      return;
+    }
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    // Проверка клика по кнопке свертывания HUD
+    if (this.viewMode === 'core') {
+      const hudW = this.hudCollapsed ? 44 : Math.max(300, Math.min(380, this.width * 0.32));
+      const hudX = Math.round(this.width - hudW - 12);
+      if (x >= hudX && x <= hudX + 36 && y >= 16 && y <= 44) {
+        this.toggleHud();
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        return;
+      }
+    }
 
     if (this.viewMode === 'core') {
       // Поиск кликнутой ТВС среди 163 сборок
@@ -2517,7 +2677,26 @@ class PlantMimic {
     }
 
     // Режим Schematic
+    // Пересчет координат в локальную систему схемы
+    const sx = (x - this.panX) / this.zoom;
+    const sy = (y - this.panY) / this.zoom;
+
     // 1. Проверяем клики по 4 ГЦН на панели петли
+    if (this.renderedRcps && this.renderedRcps.length > 0) {
+      for (let i = 0; i < this.renderedRcps.length; i++) {
+        const rcp = this.renderedRcps[i];
+        const halfW = (rcp.w || 82) / 2;
+        const halfH = (rcp.h || 48) / 2;
+        const inRect = Math.abs(sx - rcp.x) <= halfW && Math.abs(sy - rcp.y) <= halfH;
+        if (inRect || Math.hypot(sx - rcp.x, sy - rcp.y) < (rcp.r || 28)) {
+          if (window.scadaApp) {
+            if (window.plantAudio) window.plantAudio.playPmoRotate();
+            window.scadaApp.sendControl('toggle_rcp', rcp.index);
+          }
+          return;
+        }
+      }
+    }
     if (this.renderedRcps && this.renderedRcps.length > 0) {
       for (let i = 0; i < this.renderedRcps.length; i++) {
         const rcp = this.renderedRcps[i];
@@ -2550,7 +2729,7 @@ class PlantMimic {
     const gpzX = (sgx + 10 + turbx - 52) / 2;
 
     // Клик по ГЦН-1 переключает насос 1
-    if (Math.hypot(x - gcnX, y - gcnY) < 28) {
+    if (Math.hypot(sx - gcnX, sy - gcnY) < 28) {
       if (window.scadaApp) {
         if (window.plantAudio) window.plantAudio.playPmoRotate();
         window.scadaApp.sendControl('toggle_rcp', 0);
@@ -2559,7 +2738,7 @@ class PlantMimic {
     }
 
     // Клик по турбине или ГПЗ переключает стопорный клапан турбины
-    if (Math.hypot(x - turbx, y - turby) < 38 || Math.hypot(x - gpzX, y - turby + 12) < 22) {
+    if (Math.hypot(sx - turbx, sy - turby) < 38 || Math.hypot(sx - gpzX, sy - turby + 12) < 22) {
       if (window.scadaApp) {
         if (window.plantAudio) window.plantAudio.playSwitchClick();
         const isOpen = (this.state && typeof this.state.turbine_rpm === 'number') ? this.state.turbine_rpm > 100 : true;
@@ -2574,6 +2753,17 @@ class PlantMimic {
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    if (this.isDragging) {
+      const dx = (e.clientX - this.panX) - this.dragStartX;
+      const dy = (e.clientY - this.panY) - this.dragStartY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        this.hasDragged = true;
+      }
+      this.panX = e.clientX - this.dragStartX;
+      this.panY = e.clientY - this.dragStartY;
+      return;
+    }
 
     if (this.viewMode === 'core') {
       let found = null;
@@ -2608,6 +2798,8 @@ class PlantMimic {
     }
 
     if (!isHovering) {
+      const sx = (x - this.panX) / this.zoom;
+      const sy = (y - this.panY) / this.zoom;
       const rx = this.width * 0.18;
       const ry = this.height * 0.50;
       const rw = Math.max(140, Math.min(220, this.width * 0.15));
@@ -2619,9 +2811,9 @@ class PlantMimic {
       const gcnX = (rx + rw * 0.5 + sgx - sgw * 0.25) / 2 + 25;
       const gcnY = ry + rh * 0.16;
       const gpzX = (sgx + 10 + turbx - 52) / 2;
-      if (Math.hypot(x - gcnX, y - gcnY) < 28 ||
-          Math.hypot(x - turbx, y - turby) < 38 ||
-          Math.hypot(x - gpzX, y - turby + 12) < 22) {
+      if (Math.hypot(sx - gcnX, sy - gcnY) < 28 ||
+          Math.hypot(sx - turbx, sy - turby) < 38 ||
+          Math.hypot(sx - gpzX, sy - turby + 12) < 22) {
         isHovering = true;
       }
     }

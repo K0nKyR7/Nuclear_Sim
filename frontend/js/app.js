@@ -463,6 +463,54 @@ class ScadaApp {
       });
     }
 
+
+    // Управление масштабом (Zoom)
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    if (btnZoomIn) {
+      btnZoomIn.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        if (this.mimic) {
+          this.mimic.zoomIn();
+          this.updateZoomLabel();
+        }
+      });
+    }
+
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    if (btnZoomOut) {
+      btnZoomOut.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        if (this.mimic) {
+          this.mimic.zoomOut();
+          this.updateZoomLabel();
+        }
+      });
+    }
+
+    const btnZoomReset = document.getElementById('btnZoomReset');
+    if (btnZoomReset) {
+      btnZoomReset.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        if (this.mimic) {
+          this.mimic.resetView();
+          this.updateZoomLabel();
+        }
+      });
+    }
+
+    // Сброс всех аварийных вводных инструктора
+    const btnClearScenarios = document.getElementById('btnClearScenarios');
+    if (btnClearScenarios) {
+      btnClearScenarios.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        document.querySelectorAll('.scenario-btn').forEach(btn => {
+          btn.classList.remove('active');
+          const scId = btn.id.replace('sc_', '');
+          this.sendScenario(scId, false);
+        });
+      });
+    }
+
     // Включение/выключение звука
     const btnSound = document.getElementById('btnSound');
     if (btnSound) {

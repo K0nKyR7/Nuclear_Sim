@@ -120,6 +120,11 @@
               <span class="crt-view-icon">▦</span>
               <span id="crtViewLabel">СХЕМА 1К/2К (4 ПЕТЛИ)</span>
             </button>
+            <div class="crt-zoom-controls" title="Масштаб отображения (также колесико мыши)">
+              <button id="btnZoomOut" class="crt-zoom-btn" title="Уменьшить масштаб">−</button>
+              <button id="btnZoomReset" class="crt-zoom-btn zoom-val" title="Сбросить масштаб (100%)">100%</button>
+              <button id="btnZoomIn" class="crt-zoom-btn" title="Увеличить масштаб">+</button>
+            </div>
           </div>
           <div class="crt-header-spec">АСУ ТП «ТЕМП» • 20 Гц • ГОСТ 25804</div>
         </div>
@@ -178,10 +183,10 @@
                 <svg class="gauge-svg-scale" viewBox="0 0 130 130">
                   <defs>
                     <radialGradient id="dialGradP1" cx="50%" cy="48%" r="50%">
-                      <stop offset="0%" stop-color="#ece8d8"/>
-                      <stop offset="60%" stop-color="#e2dcc5"/>
-                      <stop offset="85%" stop-color="#d5cca7"/>
-                      <stop offset="100%" stop-color="#b5aa82"/>
+                      <stop offset="0%" stop-color="#ffffff"/>
+                      <stop offset="60%" stop-color="#faf7ed"/>
+                      <stop offset="85%" stop-color="#f0ebd8"/>
+                      <stop offset="100%" stop-color="#e4dbc4"/>
                     </radialGradient>
                   </defs>
                   <circle cx="65" cy="65" r="63" fill="url(#dialGradP1)" stroke="#334155" stroke-width="2"/>
@@ -225,14 +230,7 @@
                   <text x="65" y="86" font-size="6.5" font-weight="700" font-family="'Segoe UI', sans-serif" fill="#475569" text-anchor="middle">МПа • ОБМ-160</text>
                   <text x="65" y="93" font-size="5.5" font-family="'Segoe UI', sans-serif" fill="#64748b" text-anchor="middle">ГОСТ 8625 • кл. 1.5</text>
                   <!-- Тонкие хаотические микротрещины и царапины минерального стекла с бликами -->
-                  <g class="gauge-glass-cracks" pointer-events="none">
-                    <path d="M 24 38 L 32 46 L 38 44 L 46 54 L 52 53 L 60 66" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="0.5" stroke-linecap="round"/>
-                    <path d="M 24.3 38.4 L 32.3 46.4 L 38.3 44.4 L 46.3 54.4 L 52.3 53.4 L 60.3 66.4" fill="none" stroke="rgba(50,40,25,0.3)" stroke-width="0.4" stroke-linecap="round"/>
-                    <path d="M 38 44 L 42 36 L 50 33" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="0.35"/>
-                    <path d="M 84 26 L 92 37 L 97 41 L 108 50" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.45"/>
-                    <path d="M 84.3 26.3 L 92.3 37.3 L 97.3 41.3 L 108.3 50.3" fill="none" stroke="rgba(50,40,25,0.25)" stroke-width="0.35"/>
-                    <path d="M 68 86 Q 78 93 88 94 Q 96 95 105 90" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.35"/>
-                  </g>
+                  
                 </svg>
                 <div class="gauge-needle" id="needleP1"></div>
                 <div class="gauge-center-cap"></div>
@@ -247,10 +245,10 @@
                 <svg class="gauge-svg-scale" viewBox="0 0 130 130">
                   <defs>
                     <radialGradient id="dialGradP2" cx="50%" cy="48%" r="50%">
-                      <stop offset="0%" stop-color="#ece8d8"/>
-                      <stop offset="60%" stop-color="#e2dcc5"/>
-                      <stop offset="85%" stop-color="#d5cca7"/>
-                      <stop offset="100%" stop-color="#b5aa82"/>
+                      <stop offset="0%" stop-color="#ffffff"/>
+                      <stop offset="60%" stop-color="#faf7ed"/>
+                      <stop offset="85%" stop-color="#f0ebd8"/>
+                      <stop offset="100%" stop-color="#e4dbc4"/>
                     </radialGradient>
                   </defs>
                   <circle cx="65" cy="65" r="63" fill="url(#dialGradP2)" stroke="#334155" stroke-width="2"/>
@@ -284,14 +282,7 @@
                   <text x="65" y="86" font-size="6.5" font-weight="700" font-family="'Segoe UI', sans-serif" fill="#475569" text-anchor="middle">МПа • ОБМ-160</text>
                   <text x="65" y="93" font-size="5.5" font-family="'Segoe UI', sans-serif" fill="#64748b" text-anchor="middle">ГОСТ 8625 • кл. 1.5</text>
                   <!-- Тонкие хаотические микротрещины и царапины минерального стекла с бликами -->
-                  <g class="gauge-glass-cracks" pointer-events="none">
-                    <path d="M 24 38 L 32 46 L 38 44 L 46 54 L 52 53 L 60 66" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="0.5" stroke-linecap="round"/>
-                    <path d="M 24.3 38.4 L 32.3 46.4 L 38.3 44.4 L 46.3 54.4 L 52.3 53.4 L 60.3 66.4" fill="none" stroke="rgba(50,40,25,0.3)" stroke-width="0.4" stroke-linecap="round"/>
-                    <path d="M 38 44 L 42 36 L 50 33" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="0.35"/>
-                    <path d="M 84 26 L 92 37 L 97 41 L 108 50" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.45"/>
-                    <path d="M 84.3 26.3 L 92.3 37.3 L 97.3 41.3 L 108.3 50.3" fill="none" stroke="rgba(50,40,25,0.25)" stroke-width="0.35"/>
-                    <path d="M 68 86 Q 78 93 88 94 Q 96 95 105 90" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.35"/>
-                  </g>
+                  
                 </svg>
                 <div class="gauge-needle" id="needleP2"></div>
                 <div class="gauge-center-cap"></div>
@@ -597,6 +588,7 @@
           <div class="panel-screw screw-bl"></div>
           <div class="panel-screw screw-br"></div>
 
+          <!-- МЕТАЛЛИЧЕСКИЙ ШИЛЬДИК И КЛЮЧ ДОПУСКА -->
           <div class="plate-engraved instructor-plate">
             <div class="rivet r-tl"></div>
             <div class="rivet r-tr"></div>
@@ -605,6 +597,19 @@
             <span>БЛОК ВВОДА НЕИСПРАВНОСТЕЙ • ДОПУСК: ИНСТРУКТОР ТРЕНАЖЕРА</span>
           </div>
 
+          <!-- СТАТУС РЕЖИМА ИНСТРУКТОРА -->
+          <div class="instructor-sub-bar">
+            <div class="instr-key-switch">
+              <span class="instr-key-hole"></span>
+              <span class="instr-key-tag">РЕЖИМ: ТРЕНИРОВКА</span>
+            </div>
+            <div class="instr-armed-badge">
+              <span class="instr-lamp armed"></span>
+              <span>ВВОД АКТИВЕН</span>
+            </div>
+          </div>
+
+          <!-- ПЛОТНЫЙ СТЕК 5 АВАРИЙНЫХ СЦЕНАРИЕВ -->
           <div class="scenario-buttons-stack">
             <button id="sc_rcp1" class="scenario-btn industrial-toggle-card">
               <div class="missile-cover-icon">
@@ -681,6 +686,43 @@
               </div>
             </button>
           </div>
+
+          <!-- НИЖНИЙ БЛОК: ИНДИКАТОРЫ ЦЕПЕЙ АВТОМАТИКИ И КНОПКА СБРОСА НЕИСПРАВНОСТЕЙ -->
+          <div class="scenario-footer-panel">
+            <div class="scenario-footer-title">СОСТОЯНИЕ СИСТЕМ БЕЗОПАСНОСТИ ЭНЕРГОБЛОКА</div>
+            <div class="safety-sub-matrix">
+              <div class="safety-indicator-chip" title="Гидроемкости САОЗ 1..4 под азотным давлением">
+                <span class="chip-dot ok"></span>
+                <span>САОЗ ГЕ-1..4</span>
+              </div>
+              <div class="safety-indicator-chip" title="Быстродействующая редукционная установка в конденсатор">
+                <span class="chip-dot ok"></span>
+                <span>БРУ-К</span>
+              </div>
+              <div class="safety-indicator-chip" title="Быстродействующая редукционная установка в атмосферу">
+                <span class="chip-dot ok"></span>
+                <span>БРУ-А</span>
+              </div>
+              <div class="safety-indicator-chip" title="Разгрузка и ограничение мощности реактора">
+                <span class="chip-dot ok"></span>
+                <span>РОМ</span>
+              </div>
+              <div class="safety-indicator-chip" title="Ускоренная предупредительная защита">
+                <span class="chip-dot ok"></span>
+                <span>УПЗ-1/2</span>
+              </div>
+              <div class="safety-indicator-chip" title="Аварийная защита АЗ-5 по 6 независимым уставкам">
+                <span class="chip-dot ok"></span>
+                <span>АЗ-5 ГОСТ</span>
+              </div>
+            </div>
+
+            <!-- КНОПКА СНЯТИЯ ВСЕХ ВВЕДЕННЫХ НЕИСПРАВНОСТЕЙ -->
+            <button id="btnClearScenarios" class="btn-clear-scenarios" title="Снять все активные аварии и неисправности">
+              <span class="clear-icon">↺</span> СБРОС ВСЕХ ВВОДНЫХ И НЕИСПРАВНОСТЕЙ
+            </button>
+          </div>
+
         </div>
       </div>
 
