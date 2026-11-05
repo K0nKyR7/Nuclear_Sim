@@ -2485,9 +2485,16 @@ footer.operator-desk-apron {
 .actions-button-grid {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  justify-content: space-around;
-  height: 100%;
+  gap: 6px;
+  justify-content: flex-start;
+  padding-top: 2px;
+}
+
+.actions-apron-section .btn-kme {
+  height: 27px;
+  padding: 3px 6px;
+  flex: none;
+  font-size: 9.5px;
 }
 
 .btn-kme-amber {
