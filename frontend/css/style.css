@@ -1600,13 +1600,17 @@ footer.operator-desk-apron {
 
 .cover-hinge {
   position: absolute;
-  top: -6px;
-  width: 56px;
-  height: 8px;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 58px;
+  height: 9px;
   background: linear-gradient(180deg, #cbd5e1 0%, #64748b 45%, #1e293b 100%);
   border: 1px solid #94a3b8;
   border-radius: 4px;
   box-shadow: 0 2px 4px #000000;
+  z-index: 40;
+  pointer-events: none;
 }
 
 .cover-hinge .hinge-pin {
@@ -1655,8 +1659,8 @@ footer.operator-desk-apron {
 }
 
 .az5-cover.open {
-  transform: rotateX(130deg) translateY(-22px);
-  box-shadow: 0 -12px 24px rgba(234, 179, 8, 0.6), 0 4px 10px #000000;
+  transform: rotateX(112deg);
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.75), 0 -2px 10px rgba(234, 179, 8, 0.4);
 }
 
 /* Массивная красная грибовидная кнопка АЗ-5 */
