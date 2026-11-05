@@ -1193,7 +1193,7 @@ header.scada-header {
 
 /* Общий стиль приборных кассет */
 .console-card {
-  background-color: #18212b;
+  background-color: #17202b;
   background-image: 
     linear-gradient(180deg, #202c3a 0%, #141b23 100%),
     var(--tex-console);
@@ -1256,14 +1256,18 @@ header.scada-header {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: radial-gradient(circle at 48% 46%, #ffffff 0%, #fbf9f2 40%, #f3ede0 75%, #e5ddc8 100%);
-  border: 4px solid #334155;
-  border-top-color: #475569;
-  border-bottom-color: #1e293b;
+  background: radial-gradient(circle at 48% 46%, #fdfbf5 0%, #f7f0dc 42%, #ebdcb8 72%, #d5c397 100%);
+  border: 4.5px solid #283341;
+  border-top-color: #52637a;
+  border-left-color: #3d4c5e;
+  border-right-color: #1a222c;
+  border-bottom-color: #0f141b;
   box-shadow: 
-    0 4px 10px #000000,
-    inset 0 3px 8px rgba(0, 0, 0, 0.55),
-    inset 0 -1px 3px rgba(255, 255, 255, 0.2);
+    0 5px 12px #000000,
+    0 0 0 1px #111720,
+    inset 0 0 14px rgba(85, 65, 30, 0.42),
+    inset 0 3px 8px rgba(0, 0, 0, 0.65),
+    inset 0 -1.5px 2px rgba(255, 255, 255, 0.25);
   position: relative;
   overflow: hidden;
 }
@@ -1312,15 +1316,22 @@ header.scada-header {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background-image: 
-    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.06) 45%, transparent 70%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 40%, rgba(0, 0, 0, 0.1) 100%),
-    none;
-  background-size: cover, cover, 140px 140px;
-  background-blend-mode: normal;
-  opacity: 0.15;
+  background: 
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.08) 35%, transparent 60%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, transparent 42%, rgba(0, 0, 0, 0.15) 100%);
   pointer-events: none;
   z-index: 20;
+}
+
+.gauge-glass-reflection::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath d='M22 36 L30 44 L36 42 L44 52 L50 51' stroke='rgba(255,255,255,0.45)' stroke-width='0.45' fill='none' stroke-linecap='round'/%3E%3Cpath d='M22.3 36.4 L30.3 44.4 L36.3 42.4 L44.3 52.4' stroke='rgba(60,45,20,0.22)' stroke-width='0.35' fill='none' stroke-linecap='round'/%3E%3Cpath d='M82 24 L90 35 L95 39' stroke='rgba(255,255,255,0.40)' stroke-width='0.4' fill='none'/%3E%3Cpath d='M65 88 Q 76 94 86 94' stroke='rgba(255,255,255,0.35)' stroke-width='0.35' fill='none'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  opacity: 0.65;
+  pointer-events: none;
 }
 
 .gauge-glass-reflection::after {
@@ -3309,10 +3320,13 @@ footer.operator-desk-apron {
 .meter-scale-body {
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, #faf8f2 0%, #fdfcf9 10%, #f6f2e6 50%, #f0e9d6 90%, #e4dcbe 100%);
+  background: linear-gradient(180deg, #eae1c3 0%, #f5eed6 8%, #f8f4e6 45%, #eee5cb 88%, #dfd3af 100%);
   border-radius: 2px;
   position: relative;
-  box-shadow: inset 0 0 6px rgba(80, 65, 35, 0.35), inset 0 1px 2px rgba(50, 40, 20, 0.4);
+  box-shadow: 
+    inset 0 0 8px rgba(95, 75, 35, 0.45),
+    inset 0 2px 4px rgba(45, 35, 15, 0.45),
+    inset 0 -1px 3px rgba(255, 255, 255, 0.3);
 }
 
 .meter-ticks-col {
@@ -3430,14 +3444,19 @@ footer.operator-desk-apron {
 .meter-glass-sheen {
   position: absolute;
   inset: 0;
-  background: 
-    linear-gradient(135deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(0, 0, 0, 0.08) 100%),
-    none;
-  background-size: 100% 100%, 80px 120px;
-  background-blend-mode: normal;
-  opacity: 0.15;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(0, 0, 0, 0.1) 100%);
   pointer-events: none;
   z-index: 6;
+}
+
+.meter-glass-sheen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 95'%3E%3Cpath d='M10 22 L17 29 L22 26 L27 34' stroke='rgba(255,255,255,0.40)' stroke-width='0.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M10.3 22.3 L17.3 29.3 L22.3 26.3' stroke='rgba(50,40,15,0.20)' stroke-width='0.3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M44 64 L49 71 L54 74' stroke='rgba(255,255,255,0.35)' stroke-width='0.35' fill='none'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  opacity: 0.60;
+  pointer-events: none;
 }
 
 .meter-glass-sheen::after {

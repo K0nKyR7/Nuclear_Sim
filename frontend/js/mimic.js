@@ -2188,7 +2188,7 @@ class PlantMimic {
     const rodPos = Math.max(0, Math.min(1.0, s.rod_position_pct / 100.0));
 
     // Параметры правой HUD панели
-    const hudW = this.hudCollapsed ? 38 : Math.max(300, Math.min(380, Math.round(w * 0.32)));
+    const hudW = this.hudCollapsed ? 38 : Math.max(330, Math.min(420, Math.round(w * 0.35)));
     const hudX = Math.round(w - hudW - 12);
     const hudY = 16;
     const hudH = Math.round(h - 32);
@@ -2535,10 +2535,10 @@ class PlantMimic {
       ctx.stroke();
       curY += 16;
 
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 12.5px Consolas, monospace';
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 16px Consolas, monospace';
       ctx.fillText(`ИНСПЕКЦИЯ: ТВС-2М №${selAsm.id}`, hudX + 14, curY);
-      curY += 18;
+      curY += 22;
 
       let selKq = 1.25 * (1.0 - 0.42 * Math.pow(selAsm.rNorm, 1.8));
       if (selAsm.suzGroup === 10) selKq *= (0.35 + 0.65 * rodPos);
@@ -2548,23 +2548,58 @@ class PlantMimic {
 
       const tOut = s.t_cold_c + (s.t_hot_c - s.t_cold_c) * selKq * pRel;
 
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = '10px Consolas, monospace';
-      ctx.fillText(`Координаты: [q=${selAsm.q}, r=${selAsm.r}]`, hudX + 14, curY);
-      curY += 15;
-      ctx.fillText(`Коэфф. мощности Kq: ${selKq.toFixed(2)}`, hudX + 14, curY);
-      curY += 15;
-      ctx.fillText(`T теплоносителя на выходе: ${tOut.toFixed(1)}°C`, hudX + 14, curY);
-      curY += 15;
-      ctx.fillText(`Обогащение: ${selAsm.enrichment}% U-235`, hudX + 14, curY);
-      curY += 15;
-      ctx.fillText(`Выгорание: ${selAsm.burnup} МВт·сут/кгU`, hudX + 14, curY);
-      curY += 15;
+      // Крупные четкие параметры с акцентными цветами
+      ctx.font = 'bold 12.5px Consolas, monospace';
 
+      // 1. Координаты
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Координаты:', hudX + 14, curY);
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillText(`[q=${selAsm.q}, r=${selAsm.r}]`, hudX + 130, curY);
+      curY += 19;
+
+      // 2. Kq
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Коэфф. мощности Kq:', hudX + 14, curY);
+      ctx.fillStyle = selKq > 1.2 ? '#ef4444' : (selKq > 1.0 ? '#f59e0b' : '#38bdf8');
+      ctx.fillText(`${selKq.toFixed(2)}`, hudX + 185, curY);
+      curY += 19;
+
+      // 3. Температура
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('T на выходе:', hudX + 14, curY);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(`${tOut.toFixed(1)} °C`, hudX + 130, curY);
+      curY += 19;
+
+      // 4. Обогащение
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Обогащение:', hudX + 14, curY);
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillText(`${selAsm.enrichment}% U-235`, hudX + 130, curY);
+      curY += 19;
+
+      // 5. Выгорание
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Выгорание:', hudX + 14, curY);
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillText(`${selAsm.burnup} МВт·сут/кгU`, hudX + 130, curY);
+      curY += 19;
+
+      // 6. Орган СУЗ
       let suzDesc = 'Отсутствует';
-      if (selAsm.suzGroup === 10) suzDesc = 'Группа 10 (Рабочая группа СУЗ)';
-      else if (selAsm.suzGroup > 0) suzDesc = `Группа ${selAsm.suzGroup} (Аварийная защита АЗ)`;
-      ctx.fillText(`Орган СУЗ: ${suzDesc}`, hudX + 14, curY);
+      let suzColor = '#64748b';
+      if (selAsm.suzGroup === 10) {
+        suzDesc = 'Группа 10 (Рабочая группа СУЗ)';
+        suzColor = '#f59e0b';
+      } else if (selAsm.suzGroup > 0) {
+        suzDesc = `Группа ${selAsm.suzGroup} (Аварийная защита АЗ)`;
+        suzColor = '#ef4444';
+      }
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Орган СУЗ:', hudX + 14, curY);
+      ctx.fillStyle = suzColor;
+      ctx.fillText(suzDesc, hudX + 110, curY);
     }
 
     ctx.restore();
