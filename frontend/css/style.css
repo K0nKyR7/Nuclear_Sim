@@ -1,0 +1,3470 @@
+/* ==========================================================================
+   АСУ ТП И ТРЕНАЖЕР ЭНЕРГОБЛОКА ВВЭР-1000 — ПУЛЬТ ОПЕРАТОРА (БЩУ-1)
+   Стиль: Гиперреалистичный промышленный пульт управления АЭС (БЩУ)
+   Материалы: 100% непрозрачные твердые пластмассы (карболитовые/бакелитовые толкатели),
+   молотковая эмаль, вороненая сталь, латунь, оксидированный алюминий, 
+   шлицы винтов, заклепки, следы износа, ЭЛТ/VFD экраны, светосигнальные табло.
+   ========================================================================== */
+
+:root {
+  /* Текстуры аутентичных материалов */
+  --tex-console: url('/static/assets/console_steel.jpg');
+  --tex-brushed: url('/static/assets/brushed_metal.jpg');
+  --tex-annunciator: url('/static/assets/annunciator_grid.jpg');
+  --tex-scratches: url('/static/assets/scratches.jpg');
+
+  /* 100% НЕПРОЗРАЧНАЯ ПАЛИТРА ИНДУСТРИАЛЬНОЙ СТАЛИ И ЭМАЛИ */
+  --steel-dark: #0d1217;
+  --steel-panel: #182028;
+  --steel-card: #1e2833;
+  --steel-card-hover: #253240;
+  --steel-bezel: #3b4b5e;
+  --steel-highlight: #627791;
+  --steel-screw: #94a3b8;
+
+  /* Вакуумно-люминесцентные индикаторы (VFD) */
+  --vfd-green: #38ef7d;
+  --vfd-cyan: #11f3c7;
+  --vfd-glow: rgba(56, 239, 125, 0.45);
+  --vfd-bg: #091310;
+
+  /* 100% НЕПРОЗРАЧНЫЕ ПЛАСТМАССЫ КНОПОК ТИПА КМЕ / КЕ / ПЕ */
+  --btn-solid-dark: #222b35;
+  --btn-solid-dark-top: #364453;
+  --btn-solid-dark-bottom: #141a22;
+
+  --btn-solid-red: #771919;
+  --btn-solid-red-top: #932424;
+  --btn-solid-red-bottom: #4e0f0f;
+
+  --btn-solid-green: #154e34;
+  --btn-solid-green-top: #1b5e3f;
+  --btn-solid-green-bottom: #0d3824;
+
+  --btn-solid-amber: #a4761b;
+  --btn-solid-amber-top: #c2932b;
+  --btn-solid-amber-bottom: #6e4c0a;
+
+  --btn-solid-blue: #253b4c;
+  --btn-solid-blue-top: #334d61;
+  --btn-solid-blue-bottom: #182733;
+
+  --btn-solid-white: #ded3b8;
+  --btn-solid-white-top: #ece4cf;
+  --btn-solid-white-bottom: #b5a687;
+
+  /* Типографика ГОСТ */
+  --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+  --font-gost: 'Segoe UI', -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  --font-teletype: 'Lucida Console', 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body.desk-body {
+  background-color: #0b0f15;
+  background-image: 
+    linear-gradient(180deg, #111720 0%, #070a0e 100%),
+    var(--tex-console);
+  background-size: cover;
+  background-blend-mode: overlay, normal;
+  background-attachment: fixed;
+  color: #e2e8f0;
+  font-family: var(--font-gost);
+  height: 100vh;
+  overflow: hidden; /* НИКАКИХ СКРОЛЛБАРОВ НА ПУЛЬТЕ! */
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  position: relative;
+}
+
+/* Глобальный слой патины отключен во избежание размытия и полупрозрачности кнопок */
+.desk-patina-layer {
+  display: none;
+}
+
+.desk-vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  box-shadow: inset 0 0 100px #000000;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ==========================================================================
+   МЕТАЛЛИЧЕСКАЯ ФУРНИТУРА: ВИНТЫ И ЗАКЛЕПКИ
+   ========================================================================== */
+
+.panel-screw {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #cbd5e1 0%, #64748b 55%, #334155 80%, #0f172a 100%);
+  border: 1px solid #1e293b;
+  box-shadow: 
+    0 1px 2px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 2px #3e5066,
+    inset 0 1px 1px #ffffff,
+    inset 0 -1px 1px #0f172a;
+  z-index: 6;
+}
+
+.panel-screw::before {
+  content: '';
+  position: absolute;
+  top: 4.5px;
+  left: 1.5px;
+  width: 7px;
+  height: 1.5px;
+  background: #090e14;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.screw-tl { top: 6px; left: 6px; }
+.screw-tr { top: 6px; right: 6px; }
+.screw-bl { bottom: 6px; left: 6px; }
+.screw-br { bottom: 6px; right: 6px; }
+
+.panel-screw::after {
+  content: '';
+  position: absolute;
+  top: 4.5px;
+  left: 1.5px;
+  width: 7px;
+  height: 1.5px;
+  background: #090e14;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.panel-screw.screw-tl::before { transform: rotate(35deg); }
+.panel-screw.screw-tl::after { display: none; }
+
+.panel-screw.screw-tr::before { transform: rotate(-45deg); }
+.panel-screw.screw-tr::after { transform: rotate(45deg); }
+
+.panel-screw.screw-bl::before { transform: rotate(15deg); }
+.panel-screw.screw-bl::after { transform: rotate(105deg); }
+
+.panel-screw.screw-br::before { transform: rotate(80deg); }
+.panel-screw.screw-br::after { display: none; }
+
+/* Заклепки на шильдиках */
+.rivet {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #94a3b8 40%, #475569 80%, #0f172a 100%);
+  border: 0.5px solid #1e293b;
+  box-shadow: 0 1px 2px #000000, inset 0 1px 1px #ffffff;
+  z-index: 5;
+}
+
+.r-tl { top: 3px; left: 3px; }
+.r-tr { top: 3px; right: 3px; }
+.r-bl { bottom: 3px; left: 3px; }
+.r-br { bottom: 3px; right: 3px; }
+
+/* Гравированные металлические шильдики */
+.plate-engraved {
+  background-color: #242c37;
+  background-image: 
+    linear-gradient(180deg, #374454 0%, #1c242e 100%),
+    var(--tex-brushed);
+  background-size: cover;
+  background-blend-mode: overlay, normal;
+  border-top: 1px solid #7a889b;
+  border-left: 1px solid #606f82;
+  border-bottom: 2px solid #0b0f15;
+  border-right: 2px solid #0b0f15;
+  border-radius: 3px;
+  position: relative;
+  box-shadow: 
+    0 2px 5px #000000,
+    inset 0 1px 0 #94a3b8;
+}
+
+/* ==========================================================================
+   ВЕРХНИЙ ПРИБОРНЫЙ ЩИТ SCADA (ШАПКА БЩУ)
+   ========================================================================== */
+
+header.scada-header {
+  background-color: var(--steel-panel);
+  background-image: 
+    linear-gradient(180deg, #242e3a 0%, #141a22 100%),
+    var(--tex-console);
+  background-size: cover;
+  background-blend-mode: overlay, normal;
+  border-bottom: 3px solid #0f141a;
+  box-shadow: 
+    0 4px 12px #000000,
+    inset 0 1px 1px #475569,
+    inset 0 -2px 0 #000000;
+  padding: 4px 12px;
+  height: 52px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  z-index: 100;
+  position: relative;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.header-plate {
+  padding: 2px 8px;
+}
+
+.plate-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #f8fafc;
+  text-shadow: 0 1px 0 #000000, 0 -1px 0 #334155;
+  white-space: nowrap;
+}
+
+.plate-sub {
+  font-size: 8px;
+  color: #94a3b8;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+/* Большая сигнальная арматура состояния блока */
+.header-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  background: #0f1620;
+  border: 2px solid #2d3b4d;
+  box-shadow: inset 0 2px 6px #000000, 0 1px 3px #000000;
+  color: #34d399;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-lamp-housing {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #475569 0%, #1e293b 70%, #0f172a 100%);
+  border: 2px solid #64748b;
+  border-top-color: #94a3b8;
+  border-left-color: #7b8ea5;
+  border-right-color: #1e293b;
+  border-bottom-color: #0f172a;
+  box-shadow: 
+    0 2px 5px #000000,
+    0 0 0 1px #111720,
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 2px #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Рифленый ободок со стопорным кольцом */
+.status-lamp-housing::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    #334155 0deg 15deg,
+    #64748b 15deg 30deg
+  );
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.status-dot {
+  position: relative;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #6ee7b7 25%, #10b981 55%, #047857 85%, #064e3b 100%);
+  border: 1px solid #a7f3d0;
+  box-shadow: 
+    0 0 10px #10e070,
+    0 0 20px rgba(16, 224, 112, 0.55),
+    inset 0 0 2px #ffffff;
+  animation: lamp-glow-pulse 2.5s infinite ease-in-out;
+  z-index: 2;
+}
+
+/* Точечный накал нити внутри линзы */
+.status-dot::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 4px #ffffff;
+}
+
+@keyframes lamp-glow-pulse {
+  0%, 100% { opacity: 0.9; filter: drop-shadow(0 0 6px #10e070); }
+  50% { opacity: 1; filter: drop-shadow(0 0 14px #10e070); }
+}
+
+.header-status-badge.scrammed {
+  border-color: #dc2626;
+  color: #f87171;
+  background: #20080a;
+}
+
+.header-status-badge.scrammed .status-dot {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fca5a5 25%, #ef4444 55%, #b91c1c 85%, #450a0a 100%);
+  border-color: #fecaca;
+  box-shadow: 
+    0 0 14px #ef4444,
+    0 0 28px rgba(239, 68, 68, 0.8),
+    inset 0 0 3px #ffffff;
+  animation: scram-alarm-blink 0.6s infinite alternate;
+}
+
+@keyframes scram-alarm-blink {
+  from { opacity: 1; transform: scale(1.1); }
+  to { opacity: 0.2; transform: scale(0.9); }
+}
+
+/* ==========================================================================
+   ВАКУУМНО-ЛЮМИНЕСЦЕНТНАЯ И ГАЗОРАЗРЯДНАЯ ПАНЕЛЬ ТЕЛЕМЕТРИИ
+   ========================================================================== */
+
+.quick-telemetry.vfd-panel.nixie-rack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: linear-gradient(180deg, #0a1017 0%, #05080c 100%);
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: 1.5px solid #202b38;
+  box-shadow: inset 0 2px 6px #000000, 0 1px 1px rgba(255, 255, 255, 0.05);
+  position: relative;
+  height: 38px;
+  box-sizing: border-box;
+  flex-shrink: 1;
+}
+
+.metric-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 4px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #8da4be;
+}
+
+/* ИВ-6 Вакуумно-люминесцентные индикаторы (VFD) */
+.vfd-box {
+  background: linear-gradient(180deg, #0b151a 0%, #050b0e 100%);
+  border: 1.5px solid #16363d;
+  box-shadow: 0 1px 3px #000000, inset 0 0 6px rgba(6, 182, 212, 0.12);
+}
+
+.vfd-box .metric-label {
+  color: #62a3af;
+}
+
+.vfd-tube,
+.nixie-tube {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+
+.vfd-tube {
+  background: radial-gradient(ellipse at 50% 40%, rgba(6, 182, 212, 0.16) 0%, rgba(4, 18, 22, 0.85) 90%);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+}
+
+.vfd-tube::after,
+.nixie-tube::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.vfd-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--vfd-cyan);
+  text-shadow: 0 0 5px var(--vfd-glow), 0 0 10px rgba(0, 240, 255, 0.4);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.vfd-text.alarm {
+  color: #ff3344;
+  text-shadow: 0 0 8px #ff3344;
+}
+
+/* ==========================================================================
+   100% НЕПРОЗРАЧНЫЕ ПРОМЫШЛЕННЫЕ КНОПКИ (КМЕ, КЕ, ПЕ, ГОСТ 21829)
+   ========================================================================== */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.header-actions .btn-ctrl {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  gap: 5px;
+  min-height: 28px;
+}
+
+.header-actions .speed-selector-group .btn-ctrl {
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+.btn-indicator-jewel {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #6ee7b7 30%, #10b981 60%, #047857 100%);
+  border: 1.5px solid #a7f3d0;
+  box-shadow: 
+    0 0 8px #34d399,
+    0 1px 2px #000000,
+    inset 0 0 2px #ffffff;
+  display: inline-block;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.btn-indicator-jewel::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.btn-ctrl:not(.active) .btn-indicator-jewel {
+  background: radial-gradient(circle at 40% 35%, #475569 0%, #1e293b 70%, #0f172a 100%);
+  border-color: #64748b;
+  box-shadow: 0 1px 2px #000000, inset 0 1px 1px #000000;
+}
+
+.btn-ctrl:not(.active) .btn-indicator-jewel::after {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 1400px) {
+  header.scada-header {
+    padding: 3px 6px;
+    gap: 5px;
+    height: 48px;
+  }
+  .plate-sub {
+    display: none;
+  }
+  .quick-telemetry.vfd-panel.nixie-rack {
+    gap: 3px;
+    padding: 2px 4px;
+    height: 34px;
+  }
+  .metric-pill {
+    padding: 0 4px;
+    gap: 3px;
+    height: 26px;
+  }
+  .metric-label {
+    font-size: 7.5px;
+  }
+  .vfd-tube, .nixie-tube {
+    height: 20px;
+    padding: 0 4px;
+  }
+  .vfd-text, .nixie-text {
+    font-size: 10.5px !important;
+  }
+  .header-actions {
+    gap: 4px;
+  }
+  .header-actions .btn-ctrl {
+    padding: 4px 6px;
+    font-size: 10px;
+    gap: 3px;
+    min-height: 24px;
+  }
+  .header-actions .speed-selector-group .btn-ctrl {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+  .mimic-toolbar.crt-header {
+    padding: 5px 10px;
+    min-height: 44px;
+    gap: 8px;
+  }
+  .crt-header-tag {
+    font-size: 11px;
+    gap: 6px;
+  }
+  .crt-controls-group {
+    gap: 8px;
+  }
+  .crt-btn-mode,
+  .crt-mode-toggle,
+  .crt-view-toggle,
+  #btnCrtPhosphor,
+  #btnCrtView,
+  #btnTogglePhosphor,
+  #btnToggleCoreView {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 32px;
+    gap: 6px;
+  }
+  .crt-indicator-dot {
+    width: 8px;
+    height: 8px;
+  }
+  .crt-view-icon {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 1280px) {
+  header.scada-header {
+    padding: 2px 4px;
+    gap: 4px;
+    height: 46px;
+  }
+  .header-plate {
+    padding: 2px 4px;
+  }
+  .plate-title {
+    font-size: 11px;
+  }
+  .header-status-badge {
+    padding: 2px 5px;
+    font-size: 8.5px;
+    gap: 4px;
+  }
+  .quick-telemetry.vfd-panel.nixie-rack {
+    gap: 2px;
+    padding: 2px 2px;
+    height: 32px;
+  }
+  .metric-pill {
+    padding: 0 2px;
+    gap: 2px;
+    height: 24px;
+  }
+  .metric-label {
+    font-size: 6.5px;
+  }
+  .vfd-text, .nixie-text {
+    font-size: 9.5px !important;
+  }
+  .vfd-tube, .nixie-tube {
+    height: 18px;
+    padding: 0 2px;
+  }
+  .header-actions {
+    gap: 3px;
+  }
+  .header-actions .btn-ctrl {
+    padding: 3px 4px;
+    font-size: 9px;
+    min-height: 22px;
+  }
+  .header-actions .speed-selector-group .btn-ctrl {
+    padding: 3px 4px;
+    font-size: 9px;
+  }
+  .mimic-toolbar.crt-header {
+    padding: 4px 8px;
+    min-height: 40px;
+    gap: 6px;
+  }
+  .crt-header-spec {
+    display: none;
+  }
+  .crt-header-tag {
+    font-size: 10.5px;
+    gap: 5px;
+  }
+  .crt-controls-group {
+    gap: 6px;
+  }
+  .crt-btn-mode,
+  .crt-mode-toggle,
+  .crt-view-toggle,
+  #btnCrtPhosphor,
+  #btnCrtView,
+  #btnTogglePhosphor,
+  #btnToggleCoreView {
+    padding: 5px 10px;
+    font-size: 11px;
+    min-height: 30px;
+    gap: 5px;
+  }
+}
+
+/* Базовый класс непрозрачной физической кнопки с тяжелым металлическим ободком */
+.btn-ctrl {
+  background: linear-gradient(180deg, var(--btn-solid-dark-top) 0%, var(--btn-solid-dark) 50%, var(--btn-solid-dark-bottom) 100%);
+  border: 2px solid #4a5c71;
+  border-top-color: #8fa5c2;
+  border-left-color: #6e849f;
+  border-right-color: #1a232e;
+  border-bottom-color: #0b1016;
+  color: #f1f5f9;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 
+    0 3px 6px #000000,
+    0 0 0 1.5px #263342,
+    inset 1.5px 1.5px 0 rgba(255, 255, 255, 0.25),
+    inset -1.5px -1.5px 0 rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.08s ease;
+  position: relative;
+  text-shadow: 0 1px 2px #000000;
+}
+
+.btn-ctrl:hover {
+  background: linear-gradient(180deg, #445466 0%, #2b3644 50%, #1a212b 100%);
+  border-top-color: #b0c6e2;
+  filter: brightness(1.08);
+}
+
+.btn-ctrl:active {
+  transform: translateY(2.5px);
+  box-shadow: 
+    0 1px 2px #000000,
+    0 0 0 1.5px #151d26,
+    inset 0 3px 7px #000000,
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+  border-top-color: #0c1218;
+  border-bottom-color: #556c86;
+}
+
+/* Активное включенное состояние (100% плотный синий пластик с подсветкой) */
+.btn-ctrl.active {
+  background: linear-gradient(180deg, var(--btn-solid-blue-top) 0%, var(--btn-solid-blue) 50%, var(--btn-solid-blue-bottom) 100%);
+  border-top-color: #bfdbfe;
+  border-left-color: #60a5fa;
+  border-right-color: #0f172a;
+  border-bottom-color: #070e1a;
+  color: #ffffff;
+  box-shadow: 
+    0 3px 8px #000000,
+    0 0 12px rgba(37, 99, 235, 0.7),
+    0 0 0 1.5px #1e3a8a,
+    inset 1.5px 1.5px 0 #dbeafe,
+    inset -1.5px -1.5px 0 #172554;
+}
+
+/* Кнопка сброса (100% плотный темно-красный пластик) */
+.btn-ctrl.reset-btn {
+  background: linear-gradient(180deg, #6b1d22 0%, #451215 50%, #240709 100%);
+  border-color: #7f1d1d;
+  border-top-color: #fca5a5;
+  border-left-color: #ef4444;
+  border-right-color: #1f0405;
+  border-bottom-color: #0a0102;
+  color: #fecaca;
+  box-shadow: 
+    0 3px 6px #000000,
+    0 0 0 1.5px #3b0d0f,
+    inset 1.5px 1.5px 0 #fca5a5,
+    inset -1.5px -1.5px 0 #150304;
+}
+
+.btn-ctrl.reset-btn:hover {
+  background: linear-gradient(180deg, #881b20 0%, #5a1215 50%, #300609 100%);
+  border-top-color: #ffffff;
+  color: #ffffff;
+}
+
+.btn-ctrl.reset-btn:active {
+  transform: translateY(2.5px);
+  box-shadow: 
+    0 1px 2px #000000,
+    0 0 0 1.5px #150304,
+    inset 0 3px 7px #000000;
+  border-top-color: #100203;
+  border-bottom-color: #ef4444;
+}
+
+.speed-selector-group {
+  display: flex;
+  background: #080d13;
+  border: 2px solid #384a5e;
+  border-top-color: #647b97;
+  border-bottom-color: #10161f;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 5px #000000, 0 2px 4px #000000;
+}
+
+.speed-selector-group .btn-ctrl {
+  border-radius: 0;
+  border: none;
+  border-right: 1.5px solid #1c2734;
+  border-left: 1.5px solid #4a5c70;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 #000000;
+  padding: 4px 8px;
+  font-size: 10.5px;
+}
+
+.speed-selector-group .btn-ctrl:first-child {
+  border-left: none;
+}
+
+.speed-selector-group .btn-ctrl:last-child {
+  border-right: none;
+}
+
+.speed-selector-group .btn-ctrl.active {
+  background: linear-gradient(180deg, var(--btn-solid-blue-top) 0%, var(--btn-solid-blue) 50%, var(--btn-solid-blue-bottom) 100%);
+  color: #ffffff;
+  border-left: 1.5px solid #60a5fa;
+  border-right: 1.5px solid #1e3a8a;
+  box-shadow: 
+    0 0 10px rgba(37, 99, 235, 0.8),
+    inset 0 1px 1px #dbeafe,
+    inset 0 -1px 2px #0f172a;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.9);
+}
+
+.status-lamp-socket {
+  display: flex;
+  align-items: center;
+  padding: 2px 6px;
+  background: #090e15;
+  border: 1.5px solid #28374a;
+  border-top-color: #4a5d74;
+  border-bottom-color: #101620;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 4px #000000;
+}
+
+.status-badge {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-badge.on {
+  background: radial-gradient(circle at 35% 30%, #064e3b 0%, #022c22 100%);
+  color: #34d399;
+  border: 1px solid #059669;
+  box-shadow: 0 0 8px rgba(5, 150, 105, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  text-shadow: 0 0 4px #34d399;
+}
+
+.status-badge.off {
+  background: radial-gradient(circle at 35% 30%, #450a0a 0%, #200405 100%);
+  color: #f87171;
+  border: 1px solid #dc2626;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  text-shadow: 0 0 4px #f87171;
+}
+
+/* Круглая сигнальная лампа СЛЦ с хромированным ободком в гнезде связи */
+.status-lamp-socket .status-badge::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 5px;
+  flex-shrink: 0;
+  display: inline-block;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #6ee7b7 30%, #10b981 60%, #047857 100%);
+  border: 1.5px solid #a7f3d0;
+  box-shadow: 0 0 8px #34d399, 0 1px 2px #000000, inset 0 0 2px #ffffff;
+}
+
+.status-lamp-socket .status-badge.off::before {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fca5a5 30%, #ef4444 60%, #7f1d1d 100%);
+  border: 1.5px solid #fecaca;
+  box-shadow: 0 0 8px #ef4444, 0 1px 2px #000000;
+}
+
+/* ==========================================================================
+   ОСНОВНОЙ РАСКЛАД: МНЕМОЩИТ СЛЕВА + ПУЛЬТ СПРАВА (100% БЕЗ СКРОЛЛИНГА)
+   ========================================================================== */
+
+.main-viewport {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 390px;
+  overflow: hidden; /* БЕЗ СКРОЛЛА! */
+}
+
+/* ==========================================================================
+   ЛЕВАЯ ЧАСТЬ: ЭЛТ-ВИДЕОМОНИТОР ВМ-1000 / МНЕМОЩИТ
+   ========================================================================== */
+
+.mimic-container.crt-enclosure {
+  position: relative;
+  background-color: #121820;
+  background-image: 
+    linear-gradient(180deg, #18212b 0%, #0d1217 100%),
+    var(--tex-console);
+  background-size: cover;
+  background-blend-mode: overlay, normal;
+  border-right: 4px solid #0a0d11;
+  box-shadow: inset -5px 0 15px #000000;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.crt-bezel-frame {
+  flex: 1;
+  min-height: 0;
+  background: #05080c;
+  border: 8px solid #1c242e;
+  border-top-color: #2b3949;
+  border-left-color: #24303e;
+  border-right-color: #121820;
+  border-bottom-color: #0b0f14;
+  border-radius: 10px;
+  position: relative;
+  box-shadow: 
+    inset 0 0 35px #000000,
+    0 4px 12px #000000,
+    0 0 0 2px #090c10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.crt-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #64748b 0%, #1e293b 80%);
+  box-shadow: inset 0 1px 1px #ffffff, 0 1px 3px #000000;
+  z-index: 50;
+}
+.crt-c-tl { top: -5px; left: -5px; }
+.crt-c-tr { top: -5px; right: -5px; }
+.crt-c-bl { bottom: -5px; left: -5px; }
+.crt-c-br { bottom: -5px; right: -5px; }
+
+.mimic-toolbar.crt-header {
+  padding: 6px 14px;
+  min-height: 50px;
+  background: #0d141d;
+  border-bottom: 2px solid #182330;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: #7e91a6;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.crt-header-spec {
+  font-size: 10.5px;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+.crt-header-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.indicator-led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.indicator-led.green-blink {
+  background-color: #10e070;
+  box-shadow: 0 0 8px #10e070;
+  animation: led-blink 2s infinite ease-in-out;
+}
+
+@keyframes led-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.mimic-canvas-wrapper {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #0a111a 0%, #03060a 100%);
+  overflow: hidden;
+}
+
+#mimicCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 2;
+}
+
+/* Кинескопные строки и стеклянный отблеск ЭЛТ */
+.crt-scanlines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.25) 0px,
+    rgba(0, 0, 0, 0.25) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+.crt-glare-reflection {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.01) 30%,
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: 11;
+}
+
+.crt-phosphor-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: inset 0 0 60px #000000;
+  pointer-events: none;
+  z-index: 12;
+}
+
+/* ==========================================================================
+   ПРАВАЯ ЧАСТЬ: ПРИБОРНЫЙ ПУЛЬТ ОПЕРАТОРА (СТАЛЬНЫЕ КАССЕТЫ БЕЗ СКРОЛЛА)
+   ========================================================================== */
+
+.side-console.steel-rack {
+  display: flex;
+  flex-direction: column;
+  background-color: #161e27;
+  background-image: 
+    linear-gradient(180deg, #1c2633 0%, #111720 100%),
+    var(--tex-console);
+  background-size: cover;
+  background-blend-mode: overlay, normal;
+  border-left: 2px solid #2d3b4b;
+  box-shadow: inset 3px 0 10px #000000;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden; /* ВНИМАНИЕ: НИКАКОГО СКРОЛЛБАРА! ВСЕ ВЛЕЗАЕТ НА ЭКРАН! */
+}
+
+.steel-tab-strip {
+  display: flex;
+  background: #0d131a;
+  border-bottom: 2px solid #283544;
+  padding: 4px 6px 0 6px;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.steel-tab-strip .tab-btn {
+  flex: 1;
+  padding: 8px 4px;
+  background: linear-gradient(180deg, #2a3746 0%, #1c2633 50%, #121820 100%);
+  border: 2px solid #38495e;
+  border-top-color: #6d85a3;
+  border-left-color: #556c88;
+  border-right-color: #17202b;
+  border-bottom-color: #0c1219;
+  border-radius: 4px 4px 0 0;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 
+    0 3px 6px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 2.5px #475a70,
+    inset 1.5px 1.5px 0 #67809e,
+    inset -1.5px -1.5px 0 #090e14;
+  transition: all 0.08s ease;
+  position: relative;
+  text-shadow: 0 1px 2px #000000;
+}
+
+.steel-tab-strip .tab-btn:hover {
+  background: linear-gradient(180deg, #374658 0%, #253342 50%, #18212b 100%);
+  border-top-color: #9ab4d4;
+  color: #f1f5f9;
+}
+
+.steel-tab-strip .tab-btn:active {
+  transform: translateY(2.5px);
+  box-shadow: 
+    0 1px 2px #000000,
+    0 0 0 1.5px #10161f,
+    0 0 0 2.5px #324254,
+    inset 0 3px 8px #000000;
+}
+
+.steel-tab-strip .tab-btn.active {
+  background: linear-gradient(180deg, #15222f 0%, #0d1620 50%, #080d14 100%);
+  border-color: #4b6079;
+  border-top: 3px solid #38bdf8;
+  border-bottom-color: #080d14;
+  color: #ffffff;
+  box-shadow: 
+    inset 0 3px 7px #000000,
+    inset 0 -1px 0 #38bdf8,
+    0 -2px 8px rgba(56, 189, 248, 0.45);
+}
+
+.tab-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #334155 0%, #1e293b 70%, #0f172a 100%);
+  border: 1.5px solid #64748b;
+  box-shadow: 
+    0 1px 2px #000000,
+    0 0 0 1px #1e293b,
+    inset 0 1px 1px #ffffff;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.tab-indicator::after {
+  content: '';
+  position: absolute;
+  top: 1.5px;
+  left: 1.5px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.tab-btn.active .tab-indicator {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #7dd3fc 35%, #0284c7 75%, #0369a1 100%);
+  border-color: #bae6fd;
+  box-shadow: 
+    0 0 8px #38bdf8,
+    0 0 14px rgba(56, 189, 248, 0.7),
+    0 0 0 1px #0284c7,
+    inset 0 0 2px #ffffff;
+}
+
+.tab-btn.active .tab-indicator::after {
+  background: #ffffff;
+  box-shadow: 0 0 3px #ffffff;
+}
+
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden; /* ВНУТРИ ВКЛАДОК ТОЖЕ НЕТ СКРОЛЛБАРОВ */
+  padding: 8px;
+  display: none;
+}
+
+.tab-content.active {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Общий стиль приборных кассет */
+.console-card {
+  background-color: #18212b;
+  background-image: 
+    linear-gradient(180deg, #202c3a 0%, #141b23 100%),
+    var(--tex-console);
+  background-size: cover;
+  background-blend-mode: overlay, normal;
+  border: 2px solid #334356;
+  border-top-color: #4f6785;
+  border-left-color: #41556e;
+  border-right-color: #141c26;
+  border-bottom-color: #0c1219;
+  border-radius: 5px;
+  padding: 8px 10px;
+  position: relative;
+  box-shadow: 
+    0 3px 8px #000000,
+    inset 0 1px 0 #647b97,
+    inset 0 -1px 0 #000000;
+}
+
+.card-title {
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #9ab0c7;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #222f3e;
+  padding-bottom: 3px;
+}
+
+.plate-badge {
+  font-size: 8.5px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: #0f151e;
+  border: 1px solid #334356;
+  color: #64748b;
+  font-family: var(--font-mono);
+}
+
+/* Стрелочные манометры ОБМ-160 */
+.analog-gauges-row {
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.round-gauge {
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gauge-dial-face {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ece8d8 0%, #e2dcc5 55%, #d5cca7 82%, #b5aa82 100%);
+  border: 4px solid #334155;
+  border-top-color: #475569;
+  border-bottom-color: #1e293b;
+  box-shadow: 
+    0 4px 10px #000000,
+    inset 0 3px 8px rgba(0, 0, 0, 0.55),
+    inset 0 -1px 3px rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.gauge-svg-scale {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.gauge-needle {
+  position: absolute;
+  top: 13px;
+  left: calc(50% - 1.5px);
+  width: 3px;
+  height: 47px;
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 80%, #7f1d1d 100%);
+  border-radius: 2px 2px 0 0;
+  transform-origin: 50% 100%;
+  transform: rotate(-120deg);
+  box-shadow: 2px 2px 4px #000000;
+  transition: transform 0.15s cubic-bezier(0.1, 0.9, 0.2, 1);
+  z-index: 10;
+}
+
+.gauge-center-cap {
+  position: absolute;
+  top: calc(50% - 7px);
+  left: calc(50% - 7px);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #94a3b8 0%, #475569 60%, #0f172a 100%);
+  box-shadow: 0 2px 4px #000000, inset 0 1px 1px #ffffff;
+  border: 1px solid #1e293b;
+  z-index: 15;
+}
+
+.gauge-glass-reflection {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-image: 
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.06) 45%, transparent 70%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 40%, rgba(0, 0, 0, 0.1) 100%),
+    var(--tex-scratches);
+  background-size: cover, cover, 140px 140px;
+  background-blend-mode: screen, normal, overlay;
+  opacity: 0.88;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.gauge-glass-reflection::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath d='M24 38 L32 46 L38 44 L46 54 L52 53 L60 66' stroke='rgba(255,255,255,0.7)' stroke-width='0.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M24.3 38.4 L32.3 46.4 L38.3 44.4 L46.3 54.4 L52.3 53.4 L60.3 66.4' stroke='rgba(40,30,15,0.35)' stroke-width='0.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M38 44 L42 36 L50 33' stroke='rgba(255,255,255,0.55)' stroke-width='0.35' fill='none'/%3E%3Cpath d='M84 26 L92 37 L97 41 L108 50' stroke='rgba(255,255,255,0.6)' stroke-width='0.45' fill='none'/%3E%3Cpath d='M84.3 26.3 L92.3 37.3 L97.3 41.3 L108.3 50.3' stroke='rgba(40,30,15,0.3)' stroke-width='0.35' fill='none'/%3E%3Cpath d='M68 86 Q 78 93 88 94 Q 96 95 105 90' stroke='rgba(255,255,255,0.45)' stroke-width='0.35' fill='none'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.gauge-footer-tag {
+  margin-top: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  font-family: var(--font-mono);
+}
+
+/* Детальная панель телеметрии */
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 8px;
+  font-size: 9.5px;
+}
+
+.telemetry-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0f1620;
+  border: 1px solid #233142;
+  border-radius: 3px;
+  padding: 4px 6px;
+}
+
+.t-label {
+  color: #71839b;
+  font-weight: 700;
+  font-size: 8.5px;
+}
+
+.t-value {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  color: #38bdf8;
+  font-size: 10px;
+}
+
+/* ==========================================================================
+   НИЖНИЙ ГОРИЗОНТАЛЬНЫЙ ПУЛЬТ ОПЕРАТОРА (СТОЛ-ФАРТУК БЩУ)
+   ========================================================================== */
+
+footer.operator-desk-apron {
+  height: 165px;
+  background-color: #17202b;
+  background-image: 
+    linear-gradient(180deg, #222d3b 0%, #18212c 40%, #0e141b 100%),
+    var(--tex-console);
+  background-size: cover;
+  background-blend-mode: overlay, normal;
+  border-top: 3px solid #2d3b4b;
+  box-shadow: 
+    0 -4px 15px #000000,
+    inset 0 1px 1px #5d7593;
+  padding: 6px 12px;
+  position: relative;
+  z-index: 90;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.desk-apron-container {
+  display: flex;
+  gap: 8px;
+  height: 100%;
+  align-items: stretch;
+  justify-content: space-between;
+}
+
+/* Кассеты секций нижнего пульта */
+.desk-section {
+  background-color: #141c26;
+  background-image: 
+    linear-gradient(180deg, #1b2634 0%, #111720 100%),
+    var(--tex-console);
+  background-size: cover;
+  background-blend-mode: overlay, normal;
+  border: 2px solid #2d3c4e;
+  border-top-color: #4a617d;
+  border-left-color: #3b4e64;
+  border-right-color: #10161e;
+  border-bottom-color: #080c10;
+  border-radius: 5px;
+  padding: 6px 8px;
+  box-shadow: 
+    0 3px 6px #000000,
+    inset 0 1px 0 #647b97;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.section-title-plate {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #1f2a38;
+  padding-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ==========================================================================
+   СЕКЦИЯ 1: МОДУЛЬ АВАРИЙНОЙ ЗАЩИТЫ РЕАКТОРА АЗ-5
+   ========================================================================== */
+
+.az5-apron-section {
+  width: 175px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.az5-apron-section.hazard-frame {
+  border-color: #b91c1c;
+  box-shadow: 
+    inset 0 0 20px rgba(185, 28, 28, 0.35), 
+    0 4px 10px #000000;
+}
+
+.az5-apron-section.hazard-frame::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 3px solid transparent;
+  border-image: repeating-linear-gradient(
+    45deg,
+    #eab308 0,
+    #eab308 8px,
+    #000000 8px,
+    #000000 16px
+  ) 3;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* Массивный колодец станции аварийного останова */
+.az5-well-bezel {
+  position: relative;
+  width: 152px;
+  height: 88px;
+  background: radial-gradient(ellipse at 50% 50%, #080c12 0%, #161e2a 70%, #0d1217 100%);
+  border: 3px solid #5a6e87;
+  border-top-color: #8fa5c2;
+  border-left-color: #6e849f;
+  border-right-color: #1e2836;
+  border-bottom-color: #0b1016;
+  border-radius: 10px;
+  box-shadow: 
+    inset 0 4px 12px #000000,
+    inset 0 -1px 2px #94a3b8,
+    0 3px 6px #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* Желтое предупреждающее кольцо-воротник (Safety Ring Collar Fanuc/Soviet) */
+.az5-safety-collar {
+  position: absolute;
+  width: 138px;
+  height: 76px;
+  border-radius: 8px;
+  background: radial-gradient(ellipse at 50% 50%, #fde047 0%, #eab308 60%, #ca8a04 100%);
+  border: 2.5px solid #854d0e;
+  box-shadow: 
+    0 4px 10px #000000,
+    inset 0 2px 3px #fef08a,
+    inset 0 -2px 4px #713f12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.collar-text {
+  font-family: var(--font-gost);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  color: #000000;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.collar-hazard-ring {
+  width: 100%;
+  height: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    #000000 0,
+    #000000 6px,
+    #eab308 6px,
+    #eab308 12px
+  );
+  border-radius: 1px;
+}
+
+.az5-cover-wrap {
+  position: relative;
+  width: 126px;
+  height: 70px;
+  perspective: 700px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* Откидная защитная крышка */
+.az5-cover {
+  position: absolute;
+  top: 0;
+  width: 126px;
+  height: 70px;
+  background-color: #ca8a04;
+  background-image: 
+    linear-gradient(180deg, #facc15 0%, #eab308 30%, #a16207 100%),
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.08) 10px, rgba(0, 0, 0, 0.08) 20px);
+  border: 2px solid #fef08a;
+  border-top-color: #ffffff;
+  border-bottom-color: #713f12;
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #000000;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  transform-origin: top center;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+  box-shadow: 
+    0 6px 12px #000000,
+    inset 0 1px 2px #ffffff,
+    inset 0 -2px 3px #713f12;
+}
+
+.cover-hinge {
+  position: absolute;
+  top: -6px;
+  width: 56px;
+  height: 8px;
+  background: linear-gradient(180deg, #cbd5e1 0%, #64748b 45%, #1e293b 100%);
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px #000000;
+}
+
+.cover-hinge .hinge-pin {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 1px;
+  box-shadow: 0 0 2px #ffffff;
+}
+
+.cover-hazard-stripes {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  height: 7px;
+  background: repeating-linear-gradient(
+    45deg,
+    #000000 0,
+    #000000 6px,
+    #eab308 6px,
+    #eab308 12px
+  );
+  border-radius: 2px;
+}
+
+.cover-label {
+  margin-top: 8px;
+  font-family: var(--font-gost);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.tamper-seal {
+  font-size: 7px;
+  color: #fef08a;
+  background: #000000;
+  padding: 1px 6px;
+  border-radius: 2px;
+  margin-top: 4px;
+  font-weight: 800;
+  border: 1px solid #a16207;
+  letter-spacing: 0.5px;
+}
+
+.az5-cover.open {
+  transform: rotateX(130deg) translateY(-22px);
+  box-shadow: 0 -12px 24px rgba(234, 179, 8, 0.6), 0 4px 10px #000000;
+}
+
+/* Массивная красная грибовидная кнопка АЗ-5 */
+.btn-az5 {
+  width: 98px;
+  height: 58px;
+  background-color: var(--btn-solid-red);
+  background-image: 
+    radial-gradient(ellipse at 50% 25%, #ff5252 0%, #dc2626 35%, #991b1b 70%, #450a0a 100%);
+  border: 3px solid #fecaca;
+  border-top-color: #ffffff;
+  border-left-color: #fca5a5;
+  border-right-color: #7f1d1d;
+  border-bottom-color: #3b0507;
+  border-radius: 29px;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-shadow: 0 2px 4px #000000, 0 -1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    0 10px 20px #000000,
+    0 0 16px rgba(220, 38, 38, 0.7),
+    0 0 0 2px #450a0a,
+    0 0 0 4px #1a0204,
+    inset 0 3px 4px #ffffff,
+    inset 0 -4px 8px #260304;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.08s ease;
+  position: relative;
+  z-index: 12;
+}
+
+.az5-mushroom-rim {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  right: 6px;
+  bottom: 3px;
+  border-radius: 25px;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.btn-az5-core {
+  position: relative;
+  z-index: 2;
+}
+
+.btn-az5:hover {
+  filter: brightness(1.08);
+}
+
+.btn-az5:active {
+  transform: translateY(4px) scale(0.97);
+  box-shadow: 
+    0 2px 4px #000000,
+    0 0 0 2px #300607,
+    0 0 0 4px #1a0204,
+    inset 0 6px 14px #000000,
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+  border-top-color: #450a0a;
+  border-bottom-color: #dc2626;
+}
+
+.az5-mini-caption {
+  margin-top: 4px;
+  font-size: 8px;
+  color: #f87171;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-shadow: 0 1px 2px #000000;
+}
+
+/* ==========================================================================
+   СЕКЦИЯ 2: ПРИВОД ОР СУЗ
+   ========================================================================== */
+
+.suz-apron-section {
+  width: 242px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+.vfd-text-mini {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--vfd-cyan);
+  text-shadow: 0 0 5px var(--vfd-glow);
+}
+
+.edgewise-meter-box {
+  background: #080d14;
+  border: 2px solid #233142;
+  border-radius: 3px;
+  padding: 4px 6px;
+  box-shadow: inset 0 2px 6px #000000;
+}
+
+.edgewise-scale-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  color: #64748b;
+  font-family: var(--font-mono);
+  margin-bottom: 2px;
+}
+
+.rod-gauge-bar {
+  width: 100%;
+  height: 14px;
+  background: #090e15;
+  border-radius: 2px;
+  border: 1px solid #334155;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 5px #000000;
+}
+
+.rod-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #38bdf8 70%, #f59e0b 100%);
+  width: 80%;
+  box-shadow: 0 0 8px #38bdf8;
+  transition: width 0.15s ease;
+}
+
+.rod-button-group {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  margin-top: 2px;
+}
+
+.btn-rod {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 3px;
+  font-size: 9px;
+  letter-spacing: 0.2px;
+  gap: 3px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.btn-rod .btn-rod-icon {
+  font-size: 8px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.btn-rod .kme-lens-dot {
+  width: 6px;
+  height: 6px;
+  border-width: 1px;
+}
+
+/* Прямоугольные кнопки типа КМЕ / КЕ-011 */
+.btn-kme {
+  flex: 1;
+  padding: 8px 6px;
+  border: 2px solid #5a6e85;
+  border-top-color: #9cb2cb;
+  border-left-color: #7890aa;
+  border-right-color: #232f3d;
+  border-bottom-color: #0f1620;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-shadow: 
+    0 4px 10px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 3px #4a5c72,
+    0 0 0 4.5px #141c24,
+    inset 1.5px 1.5px 0 rgba(255, 255, 255, 0.4),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.7);
+  transition: all 0.08s ease;
+  position: relative;
+  text-shadow: 0 1px 2px #000000;
+}
+
+.btn-kme:hover {
+  filter: brightness(1.1);
+  border-top-color: #b8cce6;
+}
+
+.btn-kme:active {
+  transform: translateY(2.5px);
+  box-shadow: 
+    0 1px 2px #000000,
+    0 0 0 1.5px #10161f,
+    0 0 0 3px #38485c,
+    0 0 0 4.5px #0c1218,
+    inset 0 4px 10px #000000,
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+  border-top-color: #0f1620;
+  border-bottom-color: #7890aa;
+}
+
+/* Кнопка ВВЕРХ (СУЗ) - аутентичный лесной зеленый бакелит */
+.btn-kme-up {
+  background: linear-gradient(180deg, #1b5e3f 0%, #154e34 45%, #0d3824 85%, #061f14 100%);
+  border-top-color: #388e63;
+  border-left-color: #27734d;
+  border-right-color: #0d3824;
+  border-bottom-color: #05180f;
+  color: #e6f6ee;
+  box-shadow: 
+    0 4px 10px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 3px #4a5c72,
+    0 0 0 4.5px #141c24,
+    inset 1.5px 1.5px 0 #56b383,
+    inset -2px -2px 0 #05180f;
+}
+
+/* Кнопка СТОП (СУЗ) - глубокий оксидно-карминовый толкатель КЕ-011 */
+.btn-kme-stop {
+  background: linear-gradient(180deg, #8f2323 0%, #751b1b 45%, #4f1111 85%, #2d0909 100%);
+  border-color: #4f1111;
+  border-top-color: #ba3c3c;
+  border-left-color: #9c2828;
+  border-right-color: #2d0909;
+  border-bottom-color: #170404;
+  color: #fce8e8;
+  box-shadow: 
+    0 4px 10px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 3px #4a5c72,
+    0 0 0 4.5px #141c24,
+    inset 1.5px 1.5px 0 #dc5d5d,
+    inset -2px -2px 0 #170404;
+}
+
+/* Кнопка ВНИЗ (СУЗ) - теплый приглушенный охристо-горчичный бакелит */
+.btn-kme-down {
+  background: linear-gradient(180deg, #c2932b 0%, #a4761b 45%, #6e4c0a 85%, #422d04 100%);
+  border-top-color: #dfba63;
+  border-left-color: #b88b22;
+  border-right-color: #422d04;
+  border-bottom-color: #261a02;
+  color: #fff8e7;
+  box-shadow: 
+    0 4px 10px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 3px #4a5c72,
+    0 0 0 4.5px #141c24,
+    inset 1.5px 1.5px 0 #ebd59b,
+    inset -2px -2px 0 #261a02;
+}
+
+/* Встроенные сигнальные драгоценные глазки кнопок КМЕ */
+.kme-lens-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid #475569;
+  box-shadow: 0 1px 2px #000000, inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.kme-lens-dot::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 2px #ffffff;
+}
+
+.kme-lens-dot.green {
+  background: radial-gradient(circle at 35% 30%, #e6f6ee 0%, #27734d 35%, #154e34 75%, #061f14 100%);
+  border-color: #388e63;
+  box-shadow: 0 0 4px #27734d, 0 1px 2px #000000;
+}
+
+.kme-lens-dot.amber {
+  background: radial-gradient(circle at 35% 30%, #fff8e7 0%, #d49b28 35%, #a4761b 75%, #422d04 100%);
+  border-color: #dfba63;
+  box-shadow: 0 0 4px #c2932b, 0 1px 2px #000000;
+}
+
+.kme-lens-dot.blue {
+  background: radial-gradient(circle at 35% 30%, #f0f6fa 0%, #4a6c87 35%, #253b4c 75%, #0f1a23 100%);
+  border-color: #557996;
+  box-shadow: 0 0 4px #334d61, 0 1px 2px #000000;
+}
+
+.kme-lens-dot.white {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #ece4cf 45%, #b5a687 80%, #6b5f47 100%);
+  border-color: #ded3b8;
+  box-shadow: 0 0 4px rgba(222, 211, 184, 0.7), 0 1px 2px #000000;
+}
+
+/* ==========================================================================
+   СЕКЦИЯ 3: КЛЮЧИ ПМО ГЦН (ПЕТЛИ 1..4)
+   ========================================================================== */
+
+.rcp-apron-section {
+  flex: 1;
+  min-width: 310px;
+}
+
+.rcp-horizontal-grid {
+  display: flex;
+  gap: 6px;
+  height: 100%;
+}
+
+.rcp-unit-box {
+  flex: 1;
+  background: #111822;
+  border: 2px solid #28374a;
+  border-radius: 4px;
+  padding: 4px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: inset 0 2px 5px #000000;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.rcp-unit-box:hover {
+  border-color: #38bdf8;
+}
+
+.rcp-nameplate {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #cbd5e1;
+  text-transform: uppercase;
+}
+
+.pmo-switch-body {
+  position: relative;
+  width: 58px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pmo-switch-dial {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #202b37 0%, #121820 65%, #090d12 100%);
+  border: 2.5px solid #4a5c72;
+  border-top-color: #7b92ad;
+  border-left-color: #63778f;
+  border-right-color: #1a222c;
+  border-bottom-color: #0b0f15;
+  box-shadow: 
+    0 3px 8px #000000,
+    inset 0 3px 6px #000000,
+    inset 0 -1px 2px #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Радиальные риски шкалы переключателя ПМО */
+.pmo-dial-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pmo-tick {
+  position: absolute;
+  width: 2px;
+  height: 6px;
+  background: #ffffff;
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.7);
+  top: 3px;
+  left: calc(50% - 1px);
+  transform-origin: 50% 23px;
+}
+
+.pmo-tick-off {
+  transform: rotate(-45deg);
+  background: #34d399;
+  box-shadow: 0 0 4px #34d399;
+}
+
+.pmo-tick-mid {
+  transform: rotate(0deg);
+  background: #64748b;
+  height: 4px;
+}
+
+.pmo-tick-on {
+  transform: rotate(45deg);
+  background: #ef4444;
+  box-shadow: 0 0 4px #ef4444;
+}
+
+.pmo-pos-label {
+  position: absolute;
+  font-size: 8px;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+  top: 21px;
+  pointer-events: none;
+}
+
+.pos-off {
+  left: 5px;
+  color: #34d399;
+  text-shadow: 0 0 4px rgba(52, 211, 153, 0.6);
+}
+
+.pos-on {
+  right: 5px;
+  color: #f87171;
+  text-shadow: 0 0 4px rgba(248, 113, 113, 0.6);
+}
+
+/* Карболитовая рукоятка-клювик типа ПМО-Ф45 */
+.pmo-knob {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #3f4e60 0%, #202935 55%, #0f151c 90%, #05070a 100%);
+  border: 2px solid #5a6e87;
+  border-top-color: #8fa5c2;
+  border-bottom-color: #0b0f15;
+  box-shadow: 
+    0 4px 8px #000000,
+    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 3px #000000;
+  transition: transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
+
+.pmo-knob.knob-on { transform: rotate(45deg); }
+.pmo-knob.knob-off { transform: rotate(-45deg); }
+
+/* Вытянутый клювик-указатель рукоятки */
+.pmo-knob::before {
+  content: '';
+  position: absolute;
+  top: -11px;
+  left: calc(50% - 5px);
+  width: 10px;
+  height: 14px;
+  background: linear-gradient(180deg, #3f4e60 0%, #202935 60%, #131a22 100%);
+  border: 1.5px solid #5a6e87;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.8), inset 0 1px 1px #94a3b8;
+}
+
+/* Рельефные рифленые насечки рукоятки */
+.pmo-knob-ribs {
+  position: absolute;
+  top: 4px;
+  left: 2px;
+  right: 2px;
+  bottom: 4px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    #131a22 0deg 15deg,
+    #2c3948 15deg 30deg
+  );
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Белая контрастная линия указателя на клювике */
+.pmo-pointer {
+  position: absolute;
+  top: -9px;
+  left: calc(50% - 1.5px);
+  width: 3px;
+  height: 18px;
+  background: #ffffff;
+  border-radius: 1.5px;
+  box-shadow: 
+    0 0 3px rgba(255, 255, 255, 0.9),
+    0 1px 2px #000000;
+  z-index: 5;
+}
+
+/* Центральный винт фиксации рукоятки */
+.pmo-center-cap {
+  position: absolute;
+  top: calc(50% - 4.5px);
+  left: calc(50% - 4.5px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #cbd5e1 0%, #64748b 60%, #1e293b 100%);
+  border: 1px solid #1e293b;
+  box-shadow: 0 1px 2px #000000, inset 0 1px 1px #ffffff;
+  z-index: 6;
+}
+
+.pmo-center-cap::before {
+  content: '';
+  position: absolute;
+  top: 3.5px;
+  left: 1px;
+  width: 7px;
+  height: 1px;
+  background: #0f172a;
+}
+
+/* Двухцветная арматура сигнальных ламп ГЦН */
+.rcp-lamp-cluster {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.indicator-lamp-unit {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #3a4959 0%, #1a232d 70%, #0d1217 100%);
+  border: 2px solid #5a6e87;
+  border-top-color: #8fa5c2;
+  border-left-color: #6e849f;
+  border-right-color: #1e2836;
+  border-bottom-color: #0b1016;
+  box-shadow: 
+    0 2px 5px #000000,
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 2px #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ограненный рифленый ободок линзы СЛЦ */
+.indicator-lamp-unit::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    #334155 0deg 15deg,
+    #64748b 15deg 30deg
+  );
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.ind-lens {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #2a3746 0%, #151e27 65%, #0a0e14 100%);
+  border: 1px solid #334155;
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.25),
+    inset 0 -1px 2px #000000;
+  transition: all 0.15s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.off-lens:not(.active) {
+  background: radial-gradient(circle at 40% 35%, #0d3824 0%, #062316 65%, #02110a 100%);
+  border-color: #064e3b;
+}
+
+.on-lens:not(.active) {
+  background: radial-gradient(circle at 40% 35%, #421013 0%, #270809 65%, #130304 100%);
+  border-color: #450a0a;
+}
+
+/* Внутренняя вольфрамовая нить накала */
+.ind-lens::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Зеленая линза (ОТКЛ) включена */
+.off-lens.active {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #6ee7b7 20%, #10b981 50%, #047857 80%, #064e3b 100%);
+  border-color: #a7f3d0;
+  box-shadow: 
+    0 0 10px #10e070,
+    0 0 20px rgba(16, 224, 112, 0.6),
+    inset 0 0 3px #ffffff;
+}
+
+.off-lens.active::after {
+  background: #ffffff;
+  box-shadow: 0 0 4px #ffffff;
+}
+
+/* Красная линза (РАБ) включена */
+.on-lens.active {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fca5a5 20%, #ef4444 50%, #b91c1c 80%, #450a0a 100%);
+  border-color: #fecaca;
+  box-shadow: 
+    0 0 10px #ef4444,
+    0 0 20px rgba(239, 68, 68, 0.6),
+    inset 0 0 3px #ffffff;
+}
+
+.on-lens.active::after {
+  background: #ffffff;
+  box-shadow: 0 0 4px #ffffff;
+}
+
+/* ==========================================================================
+   СЕКЦИЯ 4: АВТОМАТИЧЕСКИЕ РЕГУЛЯТОРЫ (САУТ)
+   ========================================================================== */
+
+.regulators-apron-section {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.regulators-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  height: 100%;
+}
+
+.regulator-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 0;
+  border-bottom: 1px solid #1a2533;
+  font-size: 9.5px;
+}
+
+.reg-label {
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.toggle-switch-unit {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Втулка с резьбой М12 и шестигранной контргайкой тумблера */
+.tumbler-bushing {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  background: radial-gradient(circle at 50% 50%, #2a3746 0%, #151d26 65%, #080c10 100%);
+  border: 2px solid #5a6e87;
+  border-top-color: #8fa5c2;
+  border-left-color: #6e849f;
+  border-right-color: #1e2836;
+  border-bottom-color: #0b1016;
+  border-radius: 50%;
+  box-shadow: 
+    0 3px 6px #000000,
+    0 0 0 1.5px #18222d,
+    inset 0 3px 6px #000000,
+    inset 0 0 0 2px #334155,
+    inset 0 -1px 2px #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Шестигранная крепежная контргайка ГОСТ 5915 со скошенными гранями */
+.tumbler-bushing::before {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #cbd5e1 0%, #64748b 35%, #94a3b8 50%, #334155 75%, #1e293b 100%);
+  clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  box-shadow: 0 1px 3px #000000;
+  pointer-events: none;
+}
+
+/* Рычажок тумблера с механическим отклонением */
+.tumbler-lever {
+  position: absolute;
+  bottom: 7px;
+  left: calc(50% - 4px);
+  width: 8px;
+  height: 24px;
+  transform-origin: bottom center;
+  transform: rotate(-26deg);
+  transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  z-index: 5;
+  filter: drop-shadow(-3px 3px 4px rgba(0, 0, 0, 0.9));
+}
+
+.tumbler-lever.active {
+  transform: rotate(26deg);
+  filter: drop-shadow(3px 3px 4px rgba(0, 0, 0, 0.9));
+}
+
+/* Цилиндрическая хромированная бита рычажка */
+.tumbler-bat {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #475569 0%,
+    #cbd5e1 20%,
+    #ffffff 45%,
+    #94a3b8 65%,
+    #475569 85%,
+    #1e293b 100%
+  );
+  border-radius: 4px 4px 2px 2px;
+  box-shadow: 
+    inset 0 1px 1px #ffffff,
+    inset 0 -1px 1px #0f172a;
+}
+
+/* Сферический набалдашник рычажка */
+.tumbler-bat::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -2px;
+  width: 12px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 30%,
+    #ffffff 0%,
+    #e2e8f0 30%,
+    #94a3b8 60%,
+    #334155 85%,
+    #0f172a 100%
+  );
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    inset 0 1px 1px #ffffff;
+}
+
+/* Проволочные металлические скобы-ограждения тумблера */
+.toggle-guard {
+  width: 5px;
+  height: 30px;
+  border-radius: 2.5px;
+  background: linear-gradient(
+    90deg,
+    #64748b 0%,
+    #cbd5e1 30%,
+    #ffffff 50%,
+    #94a3b8 70%,
+    #334155 100%
+  );
+  border-top: 1px solid #ffffff;
+  border-bottom: 1px solid #1e293b;
+  box-shadow: 
+    2px 2px 4px #000000,
+    inset 0 1px 0 #ffffff,
+    inset 0 -1px 0 #0f172a;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toggle-tag {
+  font-size: 8px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #64748b;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.toggle-tag.active {
+  color: #38bdf8;
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+}
+
+/* ==========================================================================
+   СЕКЦИЯ 5: ОПЕРАТИВНЫЕ КОМАНДЫ И СВЯЗЬ (100% НЕПРОЗРАЧНЫЕ КНОПКИ)
+   ========================================================================== */
+
+.actions-apron-section {
+  width: 190px;
+  flex-shrink: 0;
+}
+
+.actions-button-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: space-around;
+  height: 100%;
+}
+
+.btn-kme-amber {
+  background: linear-gradient(180deg, #c2932b 0%, #a4761b 45%, #6e4c0a 85%, #422d04 100%);
+  border-color: #6e4c0a;
+  border-top-color: #dfba63;
+  border-left-color: #b88b22;
+  border-right-color: #422d04;
+  border-bottom-color: #261a02;
+  color: #fff8e7;
+  box-shadow: 
+    0 4px 10px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 3px #4a5c72,
+    0 0 0 4.5px #141c24,
+    inset 1.5px 1.5px 0 #ebd59b,
+    inset -2px -2px 0 #261a02;
+}
+
+.btn-kme-white {
+  background: linear-gradient(180deg, #ece4cf 0%, #ded3b8 30%, #c8bba0 65%, #b5a687 85%, #887a5e 100%);
+  border-color: #887a5e;
+  border-top-color: #f7f3e8;
+  border-left-color: #ded3b8;
+  border-right-color: #6b5f47;
+  border-bottom-color: #4a412f;
+  color: #2c271e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 4px 10px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 3px #4a5c72,
+    0 0 0 4.5px #141c24,
+    inset 1.5px 1.5px 0 #fbf8f0,
+    inset -2px -2px 0 #6b5f47;
+}
+
+.btn-kme-blue {
+  background: linear-gradient(180deg, #334d61 0%, #253b4c 45%, #182733 85%, #0f1a23 100%);
+  border-color: #182733;
+  border-top-color: #557996;
+  border-left-color: #3f5d75;
+  border-right-color: #0f1a23;
+  border-bottom-color: #080e14;
+  color: #e2eaf0;
+  box-shadow: 
+    0 4px 10px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 3px #4a5c72,
+    0 0 0 4.5px #141c24,
+    inset 1.5px 1.5px 0 #7ca2c2,
+    inset -2px -2px 0 #080e14;
+}
+
+/* ==========================================================================
+   СВЕТОСИГНАЛЬНЫЕ ТАБЛО БЩУ (ANNUNCIATOR GRID)
+   ========================================================================== */
+
+.annunciator-panel-card {
+  padding: 6px 8px;
+}
+
+.annunciator-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  background: #090d12;
+  border: 2px solid #232e3d;
+  padding: 4px;
+  border-radius: 4px;
+  box-shadow: inset 0 2px 6px #000000;
+}
+
+.annunciator-tile {
+  background-color: #121820;
+  background-image: 
+    linear-gradient(180deg, #18222d 0%, #0d1217 100%),
+    var(--tex-annunciator);
+  background-size: cover;
+  background-blend-mode: overlay, normal;
+  border: 2px solid #28374a;
+  border-radius: 3px;
+  padding: 8px 4px;
+  text-align: center;
+  position: relative;
+  box-shadow: inset 0 1px 0 #3b4c60, 0 1px 2px #000000;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+
+.tile-glass-texture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.04) 0px,
+    rgba(255, 255, 255, 0.04) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  pointer-events: none;
+}
+
+.tile-text {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #5d718a;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 1px #000000;
+  font-family: var(--font-gost), 'Segoe UI', sans-serif;
+}
+
+/* Двухламповая нить накаливания ТСБ (вольфрамовые лампы Ц215-225-10) */
+.annunciator-tile::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 20%;
+  right: 20%;
+  height: 3px;
+  background: transparent;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1;
+  transition: all 0.2s ease;
+}
+
+/* 100% НЕПРОЗРАЧНЫЕ горящие табло с вольфрамовыми нитями накала */
+.annunciator-tile.active-alarm {
+  background-color: #991b1b;
+  background-image: 
+    linear-gradient(180deg, #ef4444 0%, #b91c1c 50%, #7f1d1d 100%),
+    var(--tex-annunciator);
+  background-size: cover;
+  background-blend-mode: screen, normal;
+  border-color: #f87171;
+  box-shadow: 0 0 14px #ef4444, inset 0 0 10px #ffffff;
+  animation: tile-incandescent-alarm 0.8s infinite alternate;
+}
+
+.annunciator-tile.active-alarm::before {
+  background: radial-gradient(ellipse at 30% 50%, #ffffff 0%, #ffaaaa 45%, transparent 75%),
+              radial-gradient(ellipse at 70% 50%, #ffffff 0%, #ffaaaa 45%, transparent 75%);
+  box-shadow: 0 0 8px #ffffff, 0 0 16px #ff3333;
+}
+
+.annunciator-tile.active-alarm .tile-text {
+  color: #ffffff;
+  text-shadow: 0 0 6px #ffffff, 0 0 12px #ff2222;
+}
+
+@keyframes tile-incandescent-alarm {
+  from { filter: brightness(1.2); }
+  to { filter: brightness(0.7); }
+}
+
+.annunciator-tile.active-warn {
+  background-color: #b45309;
+  background-image: 
+    linear-gradient(180deg, #f59e0b 0%, #d97706 50%, #78350f 100%),
+    var(--tex-annunciator);
+  background-size: cover;
+  background-blend-mode: screen, normal;
+  border-color: #fde68a;
+  box-shadow: 0 0 12px #f59e0b, inset 0 0 8px #ffffff;
+}
+
+.annunciator-tile.active-warn::before {
+  background: radial-gradient(ellipse at 30% 50%, #ffffff 0%, #ffe4a0 45%, transparent 75%),
+              radial-gradient(ellipse at 70% 50%, #ffffff 0%, #ffe4a0 45%, transparent 75%);
+  box-shadow: 0 0 6px #ffffff, 0 0 14px #f59e0b;
+}
+
+.annunciator-tile.active-warn .tile-text {
+  color: #ffffff;
+  text-shadow: 0 0 5px #ffffff, 0 0 10px #f59e0b;
+}
+
+/* ==========================================================================
+   ЖУРНАЛ СООБЩЕНИЙ (ТЕЛЕТАЙП)
+   ========================================================================== */
+
+.log-card {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.teletype-scroll-box {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #3b4c60 #080d14;
+}
+
+.teletype-scroll-box::-webkit-scrollbar {
+  width: 5px;
+}
+
+.teletype-scroll-box::-webkit-scrollbar-track {
+  background: #080d14;
+}
+
+.teletype-scroll-box::-webkit-scrollbar-thumb {
+  background: #3b4c60;
+  border-radius: 2px;
+}
+
+.teletype-log {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-teletype);
+  font-size: 9px;
+}
+
+.teletype-log th {
+  position: sticky;
+  top: 0;
+  background: #111822;
+  z-index: 2;
+  text-align: left;
+  padding: 4px 5px;
+  color: #64748b;
+  border-bottom: 2px solid #28374a;
+  font-weight: 700;
+}
+
+.teletype-log td {
+  padding: 4px 5px;
+  border-bottom: 1px solid #1a2533;
+  color: #cbd5e1;
+}
+
+.alarm-tag {
+  display: inline-block;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-weight: 800;
+  font-size: 7.5px;
+}
+
+.alarm-tag.CRITICAL { background: #dc2626; color: white; }
+.alarm-tag.WARNING { background: #d97706; color: black; }
+.alarm-tag.INFO { background: #2563eb; color: white; }
+
+/* ==========================================================================
+   ТРЕНДЫ И САМОПИСЕЦ РП-160
+   ========================================================================== */
+
+.trends-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+}
+
+.chart-canvas-box.crt-mini {
+  flex: 1;
+  min-height: 0;
+  background: #070c12;
+  border: 2px solid #28374a;
+  border-radius: 5px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px #000000;
+}
+
+#trendCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.chart-glass-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 45%);
+  pointer-events: none;
+}
+
+.metal-sub-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 8px;
+  background: #0f151e;
+  border: 1px solid #28374a;
+  border-radius: 3px;
+  font-size: 8.5px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* ==========================================================================
+   ПУЛЬТ ВВОДНЫХ ИНСТРУКТОРА (АВАРИЙНЫЕ СЦЕНАРИИ)
+   ========================================================================== */
+
+.instructor-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.instructor-plate {
+  padding: 3px 8px;
+  margin-bottom: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #cbd5e1;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.scenario-buttons-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  justify-content: space-around;
+}
+
+.industrial-toggle-card {
+  width: 100%;
+  padding: 8px 10px;
+  background: linear-gradient(180deg, #202b38 0%, #151d26 50%, #0d1218 100%);
+  border: 2px solid #38485c;
+  border-top-color: #647b97;
+  border-left-color: #4f637a;
+  border-right-color: #111720;
+  border-bottom-color: #080c10;
+  border-radius: 4px;
+  color: #e2e8f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 
+    0 3px 6px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 2.5px #4a5d74,
+    inset 1.5px 1.5px 0 #6783a3,
+    inset -1.5px -1.5px 0 #0b1016;
+  transition: all 0.08s ease;
+  text-align: left;
+  position: relative;
+}
+
+.industrial-toggle-card:hover {
+  background: linear-gradient(180deg, #283747 0%, #1c2733 50%, #11171f 100%);
+  border-top-color: #8aa3c2;
+}
+
+.industrial-toggle-card:active {
+  transform: translateY(2.5px);
+  box-shadow: 
+    0 1px 2px #000000,
+    0 0 0 1.5px #10161f,
+    0 0 0 2.5px #334155,
+    inset 0 3px 8px #000000;
+}
+
+/* Модуль мини-тумблера со скобами внутри карточки */
+.missile-cover-icon {
+  width: 32px;
+  height: 32px;
+  background: radial-gradient(circle at 50% 50%, #1f2a36 0%, #10161f 70%, #080c10 100%);
+  border: 1.5px solid #4a5d74;
+  border-top-color: #7991ae;
+  border-bottom-color: #0c1218;
+  border-radius: 4px;
+  box-shadow: 
+    0 2px 4px #000000,
+    inset 0 2px 5px #000000;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toggle-guard-wire {
+  position: absolute;
+  top: 3px;
+  width: 3px;
+  height: 26px;
+  border-radius: 1.5px;
+  background: linear-gradient(90deg, #64748b 0%, #cbd5e1 30%, #ffffff 50%, #64748b 80%, #1e293b 100%);
+  box-shadow: 1px 1px 2px #000000;
+  z-index: 3;
+}
+
+.toggle-guard-wire.wire-l { left: 4px; }
+.toggle-guard-wire.wire-r { right: 4px; }
+
+.toggle-mini-lever {
+  width: 6px;
+  height: 18px;
+  background: linear-gradient(90deg, #475569 0%, #cbd5e1 30%, #ffffff 50%, #94a3b8 70%, #1e293b 100%);
+  border-radius: 3px 3px 1px 1px;
+  transform-origin: bottom center;
+  transform: rotate(-24deg);
+  transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: -2px 2px 3px #000000;
+  position: relative;
+  z-index: 4;
+}
+
+.toggle-mini-lever::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -2px;
+  width: 10px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #0f172a 100%);
+  box-shadow: 0 1px 2px #000000;
+}
+
+.scenario-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.scenario-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.scenario-desc {
+  font-size: 8.5px;
+  color: #94a3b8;
+}
+
+/* Сигнальная лампа-линза сценария */
+.scenario-lamp-housing {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #253342 0%, #121820 70%, #080c10 100%);
+  border: 1.5px solid #5a6e87;
+  border-top-color: #8fa5c2;
+  border-bottom-color: #0b0f15;
+  box-shadow: 0 2px 4px #000000, inset 0 1px 2px #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.scenario-lamp-housing::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    #334155 0deg 15deg,
+    #64748b 15deg 30deg
+  );
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.scenario-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #334155 0%, #1e293b 70%, #0f172a 100%);
+  border: 1px solid #475569;
+  box-shadow: inset 0 1px 2px #000000;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.industrial-toggle-card.triggered {
+  background: linear-gradient(180deg, #5c1417 0%, #3d0c0f 50%, #200406 100%);
+  border-color: #ef4444;
+  border-top-color: #fca5a5;
+  border-left-color: #f87171;
+  border-bottom-color: #450a0a;
+  box-shadow: 
+    0 0 14px rgba(239, 68, 68, 0.6),
+    0 3px 6px #000000,
+    inset 1.5px 1.5px 0 #fca5a5,
+    inset -1.5px -1.5px 0 #450a0a;
+}
+
+.industrial-toggle-card.triggered .toggle-mini-lever {
+  transform: rotate(24deg);
+  box-shadow: 2px 2px 3px #000000;
+}
+
+.industrial-toggle-card.triggered .scenario-led {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fca5a5 25%, #ef4444 60%, #991b1b 100%);
+  border-color: #fecaca;
+  box-shadow: 
+    0 0 10px #ef4444, 
+    0 0 18px rgba(239, 68, 68, 0.7),
+    inset 0 0 2px #ffffff;
+}
+
+/* ==========================================================================
+   РЕЖИМЫ ЭЛТ-ВИДЕОМОНИТОРА: P-31 ЗЕЛЕНЫЙ ЛЮМИНОФОР И ЦВЕТНАЯ SCADA
+   ========================================================================== */
+.crt-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.crt-btn-mode,
+.crt-mode-toggle,
+.crt-view-toggle,
+#btnCrtPhosphor,
+#btnCrtView,
+#btnTogglePhosphor,
+#btnToggleCoreView {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: linear-gradient(180deg, #2b394a 0%, #1c2734 50%, #121a24 100%);
+  border: 2px solid #52677f;
+  border-top-color: #8fa5c2;
+  border-left-color: #6d85a3;
+  border-right-color: #1a2533;
+  border-bottom-color: #0b1118;
+  border-radius: 4px;
+  color: #f1f5f9;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 800;
+  padding: 8px 16px;
+  min-height: 36px;
+  box-sizing: border-box;
+  cursor: pointer;
+  box-shadow: 
+    0 3px 6px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 2.5px #4a5c71,
+    inset 1px 1px 0 rgba(255, 255, 255, 0.25),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.6);
+  transition: all 0.08s ease;
+  user-select: none;
+  letter-spacing: 0.5px;
+}
+
+.crt-btn-mode:hover,
+.crt-mode-toggle:hover,
+.crt-view-toggle:hover,
+#btnCrtPhosphor:hover,
+#btnCrtView:hover,
+#btnTogglePhosphor:hover,
+#btnToggleCoreView:hover {
+  background: linear-gradient(180deg, #3a4b60 0%, #263546 50%, #172330 100%);
+  border-color: #708aa8;
+  border-top-color: #b0c6e2;
+  color: #ffffff;
+  box-shadow: 
+    0 4px 8px #000000,
+    0 0 0 1.5px #18222d,
+    0 0 0 2.5px #5a6e87,
+    inset 1px 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 10px rgba(99, 133, 172, 0.35);
+}
+
+.crt-btn-mode:active,
+.crt-mode-toggle:active,
+.crt-view-toggle:active,
+#btnCrtPhosphor:active,
+#btnCrtView:active,
+#btnTogglePhosphor:active,
+#btnToggleCoreView:active {
+  transform: translateY(2.5px);
+  box-shadow: 
+    0 1px 2px #000000,
+    0 0 0 1.5px #10161f,
+    0 0 0 2.5px #334155,
+    inset 0 3px 8px #000000,
+    inset 0 -1px 0 #334155;
+  border-top-color: #17222e;
+  border-bottom-color: #4a5e75;
+}
+
+.crt-indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #06b6d4;
+  border: 1px solid #67e8f9;
+  box-shadow: 0 0 8px #06b6d4, 0 0 14px rgba(6, 182, 212, 0.6);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.crt-btn-mode.active-p31,
+.crt-mode-toggle.active-p31 {
+  background: linear-gradient(180deg, #163622 0%, #0d2517 50%, #06170d 100%);
+  border-color: #22c55e;
+  border-top-color: #4ade80;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4), inset 1px 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.crt-btn-mode.active-p31 .crt-indicator-dot,
+.crt-mode-toggle.active-p31 .crt-indicator-dot {
+  background: #22c55e;
+  border-color: #86efac;
+  box-shadow: 0 0 10px #22c55e, 0 0 18px #22c55e;
+}
+
+.crt-btn-mode.active-core,
+.crt-view-toggle.active-core {
+  background: linear-gradient(180deg, #3d2f14 0%, #291e0a 50%, #171105 100%);
+  border-color: #d97706;
+  border-top-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), inset 1px 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.crt-btn-mode.active-core .crt-view-icon,
+.crt-view-toggle.active-core .crt-view-icon {
+  color: #f59e0b;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.9);
+}
+
+.crt-view-icon {
+  font-size: 15px;
+  line-height: 1;
+  color: #38bdf8;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+/* Монохромный режим зеленого люминофора P-31 с аутентичной кривизной и bloom */
+.crt-p31 .mimic-canvas-wrapper {
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.9), inset 0 0 30px rgba(34, 197, 94, 0.35);
+}
+
+.crt-p31 .mimic-canvas-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 62%, rgba(0, 20, 5, 0.4) 85%, rgba(0, 8, 2, 0.9) 100%);
+  pointer-events: none;
+  z-index: 15;
+}
+
+.crt-p31 .mimic-canvas-wrapper canvas {
+  filter: sepia(100%) hue-rotate(85deg) saturate(380%) contrast(130%) brightness(95%) drop-shadow(0 0 10px rgba(34, 197, 94, 0.5));
+}
+
+.crt-p31 .crt-phosphor-glow {
+  background: radial-gradient(ellipse at 50% 50%, rgba(34, 197, 94, 0.22) 0%, rgba(5, 46, 22, 0.55) 85%);
+  mix-blend-mode: screen;
+}
+
+.crt-p31 .crt-scanlines {
+  opacity: 0.9;
+  background: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.45) 50%),
+    linear-gradient(90deg, rgba(34, 197, 94, 0.04), rgba(0, 0, 0, 0.02), rgba(34, 197, 94, 0.04));
+  background-size: 100% 3px, 6px 100%;
+}
+
+/* ==========================================================================
+   ГАЗОРАЗРЯДНЫЕ ИНДИКАТОРЫ NIXIE (ИН-14) И ВАКУУМНЫЕ VFD (ИВ-6)
+   ========================================================================== */
+.nixie-rack {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.nixie-box {
+  background: linear-gradient(180deg, #18110b 0%, #0d0805 100%) !important;
+  border: 1.5px solid #4a2814 !important;
+  box-shadow: 0 1px 3px #000000, inset 0 0 6px rgba(255, 120, 0, 0.15) !important;
+}
+
+.nixie-box .metric-label {
+  color: #c98c5b;
+}
+
+.nixie-tube {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 6px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(255, 140, 0, 0.16) 0%, rgba(20, 10, 5, 0.85) 90%);
+  border-radius: 3px;
+  border: 1px solid rgba(255, 130, 20, 0.35);
+  box-sizing: border-box;
+}
+
+.nixie-tube::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.nixie-text {
+  color: #ff9933 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-shadow: 
+    0 0 3px #ff7700,
+    0 0 8px #ff4400,
+    0 0 16px rgba(255, 68, 0, 0.7) !important;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.subcool-val {
+  color: #38bdf8 !important;
+  font-weight: 800;
+}
+
+.subcool-val.warn {
+  color: #f59e0b !important;
+  text-shadow: 0 0 8px #f59e0b !important;
+}
+
+.subcool-val.alarm {
+  color: #ef4444 !important;
+  text-shadow: 0 0 10px #ef4444 !important;
+  animation: pulse-danger 0.8s infinite alternate;
+}
+
+@keyframes pulse-danger {
+  from { opacity: 0.7; }
+  to { opacity: 1.0; }
+}
+
+/* ==========================================================================
+   СОВЕТСКИЕ ПРОФИЛЬНЫЕ СТРЕЛОЧНЫЕ ПРИБОРЫ М1611 / М1690 (ГОСТ 5365)
+   ========================================================================== */
+.profile-meters-card {
+  padding: 8px 10px;
+  margin-top: 6px;
+}
+
+.profile-meters-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.profile-meter {
+  background: linear-gradient(180deg, #1e2631 0%, #121820 100%);
+  border: 1.5px solid #3d4f63;
+  border-radius: 4px;
+  padding: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.meter-header-label {
+  font-size: 7.5px;
+  font-weight: 800;
+  color: #cbd5e1;
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
+  font-family: var(--font-gost);
+}
+
+.meter-bezel {
+  width: 100%;
+  height: 95px;
+  background: #0f151c;
+  border: 2px solid #2b394a;
+  border-radius: 3px;
+  box-shadow: inset 0 2px 5px #000000, 0 1px 2px rgba(255, 255, 255, 0.1);
+  padding: 3px 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.meter-scale-body {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #d8d0b5 0%, #e5dfcb 8%, #ebe6d6 50%, #e2dcc4 92%, #d2c8a8 100%);
+  border-radius: 2px;
+  position: relative;
+  box-shadow: inset 0 0 6px rgba(80, 65, 35, 0.35), inset 0 1px 2px rgba(50, 40, 20, 0.4);
+}
+
+.meter-ticks-col {
+  position: absolute;
+  left: 3px;
+  top: 0;
+  bottom: 0;
+  width: calc(100% - 14px);
+  pointer-events: none;
+}
+
+.m-tick {
+  position: absolute;
+  left: 0;
+  font-size: 6.5px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #0f172a;
+  transform: translateY(-50%);
+  line-height: 1;
+}
+
+.m-tick::after {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  width: 8px;
+  height: 1px;
+  background: #0f172a;
+  transform: translateY(-50%);
+}
+
+.m-tick.major::after {
+  width: 12px;
+  height: 1.5px;
+  background: #000000;
+}
+
+.m-tick.warning-tick {
+  color: #d97706;
+}
+
+.m-tick.warning-tick::after {
+  background: #d97706;
+  height: 2px;
+}
+
+.m-tick.alarm-tick {
+  color: #dc2626;
+  font-weight: 900;
+}
+
+.m-tick.alarm-tick::after {
+  background: #dc2626;
+  height: 2px;
+  width: 14px;
+}
+
+/* Антипараллаксная зеркальная полоса по ГОСТ */
+.meter-mirror-strip {
+  position: absolute;
+  right: 14px;
+  top: 4px;
+  bottom: 4px;
+  width: 5px;
+  background: linear-gradient(90deg, #94a3b8 0%, #ffffff 50%, #64748b 100%);
+  border-radius: 1px;
+  box-shadow: inset 0 0 1px #334155;
+  border: 0.5px solid #475569;
+}
+
+/* Зоны уставок */
+.meter-danger-zone {
+  position: absolute;
+  right: 2px;
+  width: 4px;
+  background: #ef4444;
+  opacity: 0.75;
+}
+
+.meter-warning-zone {
+  position: absolute;
+  right: 2px;
+  width: 4px;
+  background: #f59e0b;
+  opacity: 0.75;
+}
+
+/* Подвижный штрих-указатель */
+.meter-pointer {
+  position: absolute;
+  left: 18px;
+  right: 4px;
+  height: 2.5px;
+  background: #dc2626;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  transform: translateY(-50%);
+  z-index: 5;
+  transition: top 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.meter-pointer::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -2px;
+  width: 0;
+  height: 0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-right: 5px solid #dc2626;
+}
+
+.meter-glass-sheen {
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(0, 0, 0, 0.08) 100%),
+    var(--tex-scratches);
+  background-size: 100% 100%, 80px 120px;
+  background-blend-mode: normal, screen;
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.meter-glass-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 95'%3E%3Cpath d='M10 22 L17 29 L22 26 L28 35 M22 26 L26 20' stroke='rgba(255,255,255,0.6)' stroke-width='0.45' fill='none' stroke-linecap='round'/%3E%3Cpath d='M10.3 22.3 L17.3 29.3 L22.3 26.3 L28.3 35.3' stroke='rgba(40,30,15,0.3)' stroke-width='0.35' fill='none' stroke-linecap='round'/%3E%3Cpath d='M44 62 L49 70 L55 74 M49 70 L47 78' stroke='rgba(255,255,255,0.5)' stroke-width='0.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M44.3 62.3 L49.3 70.3 L55.3 74.3' stroke='rgba(40,30,15,0.25)' stroke-width='0.3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.meter-value-badge {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #38bdf8;
+  margin-top: 4px;
+  background: #090e15;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid #28374a;
+}
+
+.subcool-accent {
+  color: #38bdf8 !important;
+  font-weight: 800;
+}
+
+

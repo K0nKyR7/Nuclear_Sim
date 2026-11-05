@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>БЩУ-1 | ЭНЕРГОБЛОК №1 ВВЭР-1000 | ПУЛЬТ ОПЕРАТОРА</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=3.0">
+</head>
+<body class="desk-body">
+
+  <!-- ГЛОБАЛЬНЫЙ СЛОЙ ИЗНОСА, ЦАРАПИН И ПАТИНЫ МЕТАЛЛА -->
+  <div class="desk-patina-layer"></div>
+  <div class="desk-vignette"></div>
+
+  <!-- ВЕРХНЯЯ ПАНЕЛЬ ПРИБОРНОГО ЩИТА (БЩУ) -->
+  <header class="scada-header metal-panel">
+    <div class="panel-screw screw-tl"></div>
+    <div class="panel-screw screw-tr"></div>
+    <div class="panel-screw screw-bl"></div>
+    <div class="panel-screw screw-br"></div>
+
+    <!-- МЕТАЛЛИЧЕСКИЙ ШИЛЬДИК ЭНЕРГОБЛОКА -->
+    <div class="brand-section">
+      <div class="plate-engraved header-plate">
+        <div class="rivet r-tl"></div>
+        <div class="rivet r-tr"></div>
+        <div class="rivet r-bl"></div>
+        <div class="rivet r-br"></div>
+        <div class="plate-title">БЛОЧНЫЙ ЩИТ УПРАВЛЕНИЯ БЩУ-1</div>
+        <div class="plate-sub">ЭНЕРГОБЛОК №1 • ВВЭР-1000 • ЗАВ. № 4821-86 • ГОСТ 25804-83</div>
+      </div>
+
+      <!-- КРУПНАЯ СИГНАЛЬНАЯ ЛАМПА СОСТОЯНИЯ РЕАКТОРА -->
+      <div id="plantStateBadge" class="header-status-badge">
+        <div class="status-lamp-housing">
+          <div class="status-dot"></div>
+          <div class="lamp-fresnel-lens"></div>
+        </div>
+        <span class="status-text">РАБОТА НА МОЩНОСТИ</span>
+      </div>
+    </div>
+
+    <!-- ГАЗОРАЗРЯДНАЯ NIXIE (ИН-14) И ВАКУУМНО-ЛЮМИНЕСЦЕНТНАЯ (ИВ-6) ТЕЛЕМЕТРИЯ -->
+    <div class="quick-telemetry vfd-panel nixie-rack">
+      <div class="metric-pill nixie-box" title="ИН-14: Тепловая нейтронная мощность % (Nном)">
+        <span class="metric-label">N ТЕПЛ</span>
+        <div class="nixie-tube"><span id="m_nth" class="metric-val nixie-text">100.0 % (3000 МВт)</span></div>
+      </div>
+      <div class="metric-pill nixie-box" title="ИН-14: Электрическая мощность генератора ТВВ-1000">
+        <span class="metric-label">N ЭЛ</span>
+        <div class="nixie-tube"><span id="m_nel" class="metric-val nixie-text">1000 МВт</span></div>
+      </div>
+      <div class="metric-pill nixie-box" title="ИН-14: Период разгона реактора Т (секунды, уставка АЗ < 10 с)">
+        <span class="metric-label">ПЕРИОД Т [ИН-14]</span>
+        <div class="nixie-tube"><span id="m_period" class="metric-val nixie-text">∞ с</span></div>
+      </div>
+      <div class="metric-pill vfd-box" title="ИВ-6: Давление в 1 контуре (номинал 15.70 МПа)">
+        <span class="metric-label">P 1К</span>
+        <div class="vfd-tube"><span id="m_p1" class="metric-val vfd-text">15.70 МПа</span></div>
+      </div>
+      <div class="metric-pill vfd-box" title="ИВ-6: Запас до закипания теплоносителя (субкулинг)">
+        <span class="metric-label">ΔTнас</span>
+        <div class="vfd-tube"><span id="m_subcool" class="metric-val vfd-text subcool-val">25.8 °C</span></div>
+      </div>
+      <div class="metric-pill vfd-box" title="ИВ-6: Давление пара во 2 контуре (номинал 6.40 МПа)">
+        <span class="metric-label">P 2К</span>
+        <div class="vfd-tube"><span id="m_p2" class="metric-val vfd-text">6.40 МПа</span></div>
+      </div>
+      <div class="metric-pill vfd-box" title="ИВ-6: Время симуляции">
+        <span class="metric-label">ВРЕМЯ</span>
+        <div class="vfd-tube"><span id="simTime" class="metric-val vfd-text">0.0 с</span></div>
+      </div>
+    </div>
+
+    <!-- КНОПКИ И ТУМБЛЕРЫ УПРАВЛЕНИЯ ВРЕМЕНЕМ (100% НЕПРОЗРАЧНЫЕ) -->
+    <div class="header-actions">
+      <button id="btnSound" class="btn-ctrl active" title="Включить / выключить акустику пульта">
+        <span class="btn-indicator-jewel"></span>
+        <span class="btn-caption">🔊 ЗВУК</span>
+      </button>
+      <button id="btnPause" class="btn-ctrl" title="Остановить ход времени модели">
+        <span class="btn-caption">⏸ ПАУЗА</span>
+      </button>
+      <div class="speed-selector-group">
+        <button class="btn-ctrl active" data-speed="1.0">1x</button>
+        <button class="btn-ctrl" data-speed="2.0">2x</button>
+        <button class="btn-ctrl" data-speed="5.0">5x</button>
+      </div>
+      <button id="btnReset" class="btn-ctrl reset-btn" title="Сброс реактора к исходным 100%">
+        <span class="btn-caption">↺ СБРОС</span>
+      </button>
+      <div class="status-lamp-socket" title="Канал связи SCADA с ядром модели">
+        <span id="connStatus" class="status-badge on">ONLINE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ОСНОВНАЯ РАБОЧАЯ ЗОНА ОПЕРАТОРА (БЕЗ СКРОЛЛБАРА) -->
+  <main class="main-viewport">
+
+    <!-- ЛЕВАЯ ЧАСТЬ: МНЕМОЩИТ И ЭКРАН ВИДЕОМОНИТОРА ВМ-1000 -->
+    <section class="mimic-container crt-enclosure" id="mimicContainer">
+      <div class="crt-bezel-frame">
+        <div class="crt-corner crt-c-tl"></div>
+        <div class="crt-corner crt-c-tr"></div>
+        <div class="crt-corner crt-c-bl"></div>
+        <div class="crt-corner crt-c-br"></div>
+
+        <div class="mimic-toolbar crt-header">
+          <div class="crt-header-tag">
+            <span class="indicator-led green-blink"></span>
+            <span>ВИДЕОМОНИТОР ВМ-1000 • ВВЭР-1000</span>
+          </div>
+          <div class="crt-controls-group">
+            <button id="btnCrtPhosphor" name="btnTogglePhosphor" data-id="btnTogglePhosphor" class="crt-btn-mode crt-mode-toggle" title="Переключение люминофора ЭЛТ (Цветная SCADA / Монохром P-31 зеленый)">
+              <span class="crt-indicator-dot"></span>
+              <span id="crtPhosphorLabel">ЭЛТ: ЦВЕТ</span>
+            </button>
+            <button id="btnCrtView" name="btnToggleCoreView" data-id="btnToggleCoreView" class="crt-btn-mode crt-view-toggle" title="Переключение видеокадра (Схема 1К/2К 4 петли / Картограмма АЗ 163 ТВС)">
+              <span class="crt-view-icon">▦</span>
+              <span id="crtViewLabel">СХЕМА 1К/2К (4 ПЕТЛИ)</span>
+            </button>
+          </div>
+          <div class="crt-header-spec">АСУ ТП «ТЕМП» • 20 Гц • ГОСТ 25804</div>
+        </div>
+
+        <div class="mimic-canvas-wrapper">
+          <canvas id="mimicCanvas"></canvas>
+          <!-- Стеклянный блик ЭЛТ-монитора и кинескопные строки -->
+          <div class="crt-scanlines"></div>
+          <div class="crt-glare-reflection"></div>
+          <div class="crt-phosphor-glow"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ПРАВАЯ ЧАСТЬ: ПРИБОРНЫЙ ПУЛЬТ ОПЕРАТОРА (КОМПАКТНЫЕ ВКЛАДКИ БЕЗ СКРОЛЛИНГА) -->
+    <aside class="side-console steel-rack">
+      <nav class="console-tabs steel-tab-strip">
+        <button class="tab-btn active" data-tab="controls">
+          <span class="tab-indicator"></span>
+          <span>ПРИБОРЫ 1К/2К</span>
+        </button>
+        <button class="tab-btn" data-tab="trends">
+          <span class="tab-indicator"></span>
+          <span>ТРЕНДЫ РП-160</span>
+        </button>
+        <button class="tab-btn" data-tab="alarms">
+          <span class="tab-indicator"></span>
+          <span>СИГНАЛИЗАЦИЯ</span>
+        </button>
+        <button class="tab-btn" data-tab="scenarios">
+          <span class="tab-indicator"></span>
+          <span>АВАРИИ</span>
+        </button>
+      </nav>
+
+      <!-- ВКЛАДКА 1: ПРИБОРЫ И ДЕТАЛЬНАЯ ТЕЛЕМЕТРИЯ -->
+      <div id="tab_controls" class="tab-content active">
+
+        <!-- АНАЛОГОВЫЕ СТРЕЛОЧНЫЕ ПРИБОРЫ (МАНОМЕТРЫ 1К / 2К) -->
+        <div class="console-card analog-gauges-card">
+          <div class="panel-screw screw-tl"></div>
+          <div class="panel-screw screw-tr"></div>
+          <div class="panel-screw screw-bl"></div>
+          <div class="panel-screw screw-br"></div>
+
+          <div class="card-title">
+            <span>СТРЕЛОЧНЫЕ МАНОМЕТРЫ КОНТУРОВ ОБМ-160</span>
+            <span class="plate-badge">ГОСТ 8625</span>
+          </div>
+
+          <div class="analog-gauges-row">
+            <!-- Стрелочный прибор 1К -->
+            <div class="round-gauge" id="gaugeP1">
+              <div class="gauge-dial-face">
+                <svg class="gauge-svg-scale" viewBox="0 0 130 130">
+                  <defs>
+                    <radialGradient id="dialGradP1" cx="50%" cy="48%" r="50%">
+                      <stop offset="0%" stop-color="#ece8d8"/>
+                      <stop offset="60%" stop-color="#e2dcc5"/>
+                      <stop offset="85%" stop-color="#d5cca7"/>
+                      <stop offset="100%" stop-color="#b5aa82"/>
+                    </radialGradient>
+                  </defs>
+                  <circle cx="65" cy="65" r="63" fill="url(#dialGradP1)" stroke="#334155" stroke-width="2"/>
+                  <circle cx="65" cy="65" r="60" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+                  <!-- Normal / Warning / Trip Arc Bands -->
+                  <path d="M 65 65 L 103.8 87.4 A 45 45 0 0 0 109.9 61.1 Z" fill="#10b981" opacity="0.35"/>
+                  <path d="M 65 65 L 109.9 61.1 A 45 45 0 0 0 109.8 54.3 Z" fill="#f59e0b" opacity="0.5"/>
+                  <path d="M 65 65 L 109.8 54.3 A 45 45 0 0 0 87.5 26.0 Z" fill="#ef4444" opacity="0.45"/>
+                  <circle cx="65" cy="65" r="41" fill="url(#dialGradP1)"/>
+                  <!-- Scale 240 deg arc -->
+                  <path d="M 26.0 87.5 A 45 45 0 1 1 104.0 87.5" fill="none" stroke="#0f172a" stroke-width="1.8"/>
+                  <!-- Major Ticks: 0, 5, 10, 15, 20 -->
+                  <line x1="26.0" y1="87.5" x2="31.2" y2="84.5" stroke="#0f172a" stroke-width="2"/>
+                  <text x="36" y="80" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">0</text>
+                  <line x1="26.0" y1="42.5" x2="31.2" y2="45.5" stroke="#0f172a" stroke-width="2"/>
+                  <text x="37" y="50" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">5</text>
+                  <line x1="65.0" y1="20.0" x2="65.0" y2="26.0" stroke="#0f172a" stroke-width="2"/>
+                  <text x="65" y="36" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">10</text>
+                  <line x1="104.0" y1="42.5" x2="98.8" y2="45.5" stroke="#0f172a" stroke-width="2"/>
+                  <text x="93" y="50" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">15</text>
+                  <line x1="104.0" y1="87.5" x2="98.8" y2="84.5" stroke="#0f172a" stroke-width="2"/>
+                  <text x="94" y="80" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">20</text>
+                  <!-- Minor Ticks -->
+                  <line x1="23.9" y1="78.2" x2="27.8" y2="76.0" stroke="#334155" stroke-width="1"/>
+                  <line x1="22.8" y1="68.8" x2="27.0" y2="68.0" stroke="#334155" stroke-width="1"/>
+                  <line x1="22.6" y1="59.3" x2="27.0" y2="60.0" stroke="#334155" stroke-width="1"/>
+                  <line x1="23.6" y1="50.0" x2="27.8" y2="52.0" stroke="#334155" stroke-width="1"/>
+                  <line x1="30.2" y1="35.6" x2="33.8" y2="38.7" stroke="#334155" stroke-width="1"/>
+                  <line x1="36.8" y1="29.8" x2="39.8" y2="33.5" stroke="#334155" stroke-width="1"/>
+                  <line x1="45.1" y1="24.8" x2="47.3" y2="29.0" stroke="#334155" stroke-width="1"/>
+                  <line x1="54.8" y1="21.2" x2="55.9" y2="26.0" stroke="#334155" stroke-width="1"/>
+                  <line x1="75.2" y1="21.2" x2="74.1" y2="26.0" stroke="#334155" stroke-width="1"/>
+                  <line x1="84.9" y1="24.8" x2="82.7" y2="29.0" stroke="#334155" stroke-width="1"/>
+                  <line x1="93.2" y1="29.8" x2="90.2" y2="33.5" stroke="#334155" stroke-width="1"/>
+                  <line x1="99.8" y1="35.6" x2="96.2" y2="38.7" stroke="#334155" stroke-width="1"/>
+                  <line x1="106.4" y1="50.0" x2="102.2" y2="52.0" stroke="#dc2626" stroke-width="1.2"/>
+                  <line x1="107.4" y1="59.3" x2="103.0" y2="60.0" stroke="#dc2626" stroke-width="1.2"/>
+                  <line x1="107.2" y1="68.8" x2="103.0" y2="68.0" stroke="#dc2626" stroke-width="1.2"/>
+                  <line x1="106.1" y1="78.2" x2="102.2" y2="76.0" stroke="#dc2626" stroke-width="1.2"/>
+                  <text x="65" y="77" font-size="7.5" font-weight="800" font-family="'Segoe UI', sans-serif" fill="#1e293b" text-anchor="middle" letter-spacing="0.5">1 КОНТУР</text>
+                  <text x="65" y="86" font-size="6.5" font-weight="700" font-family="'Segoe UI', sans-serif" fill="#475569" text-anchor="middle">МПа • ОБМ-160</text>
+                  <text x="65" y="93" font-size="5.5" font-family="'Segoe UI', sans-serif" fill="#64748b" text-anchor="middle">ГОСТ 8625 • кл. 1.5</text>
+                  <!-- Тонкие хаотические микротрещины и царапины минерального стекла с бликами -->
+                  <g class="gauge-glass-cracks" pointer-events="none">
+                    <path d="M 24 38 L 32 46 L 38 44 L 46 54 L 52 53 L 60 66" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="0.5" stroke-linecap="round"/>
+                    <path d="M 24.3 38.4 L 32.3 46.4 L 38.3 44.4 L 46.3 54.4 L 52.3 53.4 L 60.3 66.4" fill="none" stroke="rgba(50,40,25,0.3)" stroke-width="0.4" stroke-linecap="round"/>
+                    <path d="M 38 44 L 42 36 L 50 33" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="0.35"/>
+                    <path d="M 84 26 L 92 37 L 97 41 L 108 50" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.45"/>
+                    <path d="M 84.3 26.3 L 92.3 37.3 L 97.3 41.3 L 108.3 50.3" fill="none" stroke="rgba(50,40,25,0.25)" stroke-width="0.35"/>
+                    <path d="M 68 86 Q 78 93 88 94 Q 96 95 105 90" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.35"/>
+                  </g>
+                </svg>
+                <div class="gauge-needle" id="needleP1"></div>
+                <div class="gauge-center-cap"></div>
+                <div class="gauge-glass-reflection"></div>
+              </div>
+              <div class="gauge-footer-tag" id="gaugeP1_val">P1 (15.70 МПа)</div>
+            </div>
+
+            <!-- Стрелочный прибор 2К -->
+            <div class="round-gauge" id="gaugeP2">
+              <div class="gauge-dial-face">
+                <svg class="gauge-svg-scale" viewBox="0 0 130 130">
+                  <defs>
+                    <radialGradient id="dialGradP2" cx="50%" cy="48%" r="50%">
+                      <stop offset="0%" stop-color="#ece8d8"/>
+                      <stop offset="60%" stop-color="#e2dcc5"/>
+                      <stop offset="85%" stop-color="#d5cca7"/>
+                      <stop offset="100%" stop-color="#b5aa82"/>
+                    </radialGradient>
+                  </defs>
+                  <circle cx="65" cy="65" r="63" fill="url(#dialGradP2)" stroke="#334155" stroke-width="2"/>
+                  <circle cx="65" cy="65" r="60" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+                  <!-- Normal / Warning / Trip Arc Bands -->
+                  <path d="M 65 65 L 100.8 47.8 A 45 45 0 0 0 104.9 39.5 Z" fill="#10b981" opacity="0.4"/>
+                  <path d="M 65 65 L 105.7 36.4 A 45 45 0 0 0 104.0 87.5 Z" fill="#ef4444" opacity="0.45"/>
+                  <circle cx="65" cy="65" r="41" fill="url(#dialGradP2)"/>
+                  <!-- Scale 240 deg arc -->
+                  <path d="M 26.0 87.5 A 45 45 0 1 1 104.0 87.5" fill="none" stroke="#0f172a" stroke-width="1.8"/>
+                  <!-- Major Ticks: 0, 2, 4, 6, 8, 10 -->
+                  <line x1="26.0" y1="87.5" x2="31.2" y2="84.5" stroke="#0f172a" stroke-width="2"/>
+                  <text x="36" y="80" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">0</text>
+                  <line x1="23.9" y1="51.1" x2="28.9" y2="53.5" stroke="#0f172a" stroke-width="2"/>
+                  <text x="36" y="55" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">2</text>
+                  <line x1="46.7" y1="23.9" x2="49.9" y2="28.6" stroke="#0f172a" stroke-width="2"/>
+                  <text x="53" y="38" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">4</text>
+                  <line x1="83.3" y1="23.9" x2="80.1" y2="28.6" stroke="#0f172a" stroke-width="2"/>
+                  <text x="77" y="38" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">6</text>
+                  <line x1="106.1" y1="51.1" x2="101.1" y2="53.5" stroke="#0f172a" stroke-width="2"/>
+                  <text x="94" y="55" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">8</text>
+                  <line x1="104.0" y1="87.5" x2="98.8" y2="84.5" stroke="#0f172a" stroke-width="2"/>
+                  <text x="94" y="80" font-size="9" font-weight="900" font-family="Consolas, monospace" fill="#0f172a" text-anchor="middle">10</text>
+                  <!-- Minor Ticks -->
+                  <line x1="22.7" y1="69.7" x2="27.0" y2="69.3" stroke="#334155" stroke-width="1.2"/>
+                  <line x1="33.6" y1="34.9" x2="37.2" y2="38.5" stroke="#334155" stroke-width="1.2"/>
+                  <line x1="65.0" y1="20.0" x2="65.0" y2="25.0" stroke="#334155" stroke-width="1.2"/>
+                  <line x1="96.4" y1="34.9" x2="92.8" y2="38.5" stroke="#dc2626" stroke-width="1.2"/>
+                  <line x1="107.3" y1="69.7" x2="103.0" y2="69.3" stroke="#dc2626" stroke-width="1.2"/>
+                  <text x="65" y="77" font-size="7.5" font-weight="800" font-family="'Segoe UI', sans-serif" fill="#1e293b" text-anchor="middle" letter-spacing="0.5">2 КОНТУР</text>
+                  <text x="65" y="86" font-size="6.5" font-weight="700" font-family="'Segoe UI', sans-serif" fill="#475569" text-anchor="middle">МПа • ОБМ-160</text>
+                  <text x="65" y="93" font-size="5.5" font-family="'Segoe UI', sans-serif" fill="#64748b" text-anchor="middle">ГОСТ 8625 • кл. 1.5</text>
+                  <!-- Тонкие хаотические микротрещины и царапины минерального стекла с бликами -->
+                  <g class="gauge-glass-cracks" pointer-events="none">
+                    <path d="M 24 38 L 32 46 L 38 44 L 46 54 L 52 53 L 60 66" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="0.5" stroke-linecap="round"/>
+                    <path d="M 24.3 38.4 L 32.3 46.4 L 38.3 44.4 L 46.3 54.4 L 52.3 53.4 L 60.3 66.4" fill="none" stroke="rgba(50,40,25,0.3)" stroke-width="0.4" stroke-linecap="round"/>
+                    <path d="M 38 44 L 42 36 L 50 33" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="0.35"/>
+                    <path d="M 84 26 L 92 37 L 97 41 L 108 50" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.45"/>
+                    <path d="M 84.3 26.3 L 92.3 37.3 L 97.3 41.3 L 108.3 50.3" fill="none" stroke="rgba(50,40,25,0.25)" stroke-width="0.35"/>
+                    <path d="M 68 86 Q 78 93 88 94 Q 96 95 105 90" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.35"/>
+                  </g>
+                </svg>
+                <div class="gauge-needle" id="needleP2"></div>
+                <div class="gauge-center-cap"></div>
+                <div class="gauge-glass-reflection"></div>
+              </div>
+              <div class="gauge-footer-tag" id="gaugeP2_val">P2 (6.40 МПа)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- СОВЕТСКИЕ ПРОФИЛЬНЫЕ СТРЕЛОЧНЫЕ ПРИБОРЫ М1611 / М1690 (ГОСТ 5365) -->
+        <div class="console-card profile-meters-card">
+          <div class="panel-screw screw-tl"></div>
+          <div class="panel-screw screw-tr"></div>
+          <div class="panel-screw screw-bl"></div>
+          <div class="panel-screw screw-br"></div>
+
+          <div class="card-title">
+            <span>ПРОФИЛЬНЫЕ ПРИБОРЫ С ЗЕРКАЛЬНОЙ ПОЛОСОЙ М1611 / М1690</span>
+            <span class="plate-badge">ГОСТ 5365 • КЛ. 1.0</span>
+          </div>
+
+          <div class="profile-meters-grid">
+            <!-- Прибор М1690: Запас до закипания ΔTнас -->
+            <div class="profile-meter" id="meter_m1690_subcool_box">
+              <div class="meter-header-label">М1690 • ЗАПАС ДО КИПЕНИЯ ΔTнас</div>
+              <div class="meter-bezel">
+                <div class="meter-scale-body">
+                  <div class="meter-ticks-col">
+                    <span class="m-tick major" style="top: 0%;">50°</span>
+                    <span class="m-tick" style="top: 20%;">40°</span>
+                    <span class="m-tick" style="top: 40%;">30°</span>
+                    <span class="m-tick" style="top: 60%;">20°</span>
+                    <span class="m-tick warning-tick" style="top: 80%;" title="Уставка ПЗ (10°C)">10°</span>
+                    <span class="m-tick alarm-tick" style="top: 92%;" title="Уставка АЗ (4°C)">4°</span>
+                    <span class="m-tick major" style="top: 100%;">0°</span>
+                  </div>
+                  <!-- Антипараллаксная зеркальная полоса -->
+                  <div class="meter-mirror-strip"></div>
+                  <!-- Красная зона аварийного закипания (0..4°C) -->
+                  <div class="meter-danger-zone" style="top: 92%; height: 8%;"></div>
+                  <!-- Желтая зона предупреждения ПЗ (4..10°C) -->
+                  <div class="meter-warning-zone" style="top: 80%; height: 12%;"></div>
+                  <!-- Подвижный штрих-указатель -->
+                  <div class="meter-pointer" id="meter_m1690_pointer" style="top: 48.4%;"></div>
+                  <div class="meter-glass-sheen"></div>
+                </div>
+              </div>
+              <div class="meter-value-badge" id="val_m1690_subcool">25.8 °C</div>
+            </div>
+
+            <!-- Прибор М1611: Реактивность ρ (pcm) -->
+            <div class="profile-meter" id="meter_m1611_rho_box">
+              <div class="meter-header-label">М1611 • РЕАКТИВНОСТЬ ρ (pcm)</div>
+              <div class="meter-bezel">
+                <div class="meter-scale-body">
+                  <div class="meter-ticks-col">
+                    <span class="m-tick major" style="top: 0%;">+1000</span>
+                    <span class="m-tick" style="top: 25%;">+500</span>
+                    <span class="m-tick major zero-tick" style="top: 50%;">0</span>
+                    <span class="m-tick" style="top: 75%;">-500</span>
+                    <span class="m-tick major" style="top: 100%;">-1000</span>
+                  </div>
+                  <div class="meter-mirror-strip"></div>
+                  <div class="meter-pointer" id="meter_m1611_pointer" style="top: 50%;"></div>
+                  <div class="meter-glass-sheen"></div>
+                </div>
+              </div>
+              <div class="meter-value-badge" id="val_m1611_rho">0 pcm</div>
+            </div>
+
+            <!-- Прибор М1611: Мощность Nнейтр (%) -->
+            <div class="profile-meter" id="meter_m1611_power_box">
+              <div class="meter-header-label">М1611 • N ТЕПЛОВАЯ (%)</div>
+              <div class="meter-bezel">
+                <div class="meter-scale-body">
+                  <div class="meter-ticks-col">
+                    <span class="m-tick major" style="top: 0%;">120%</span>
+                    <span class="m-tick alarm-tick" style="top: 10.8%;" title="Уставка АЗ (107%)">107%</span>
+                    <span class="m-tick warning-tick" style="top: 14.2%;" title="Уставка ПЗ (103%)">103%</span>
+                    <span class="m-tick major" style="top: 16.7%;">100%</span>
+                    <span class="m-tick" style="top: 50%;">60%</span>
+                    <span class="m-tick" style="top: 83.3%;">20%</span>
+                    <span class="m-tick major" style="top: 100%;">0%</span>
+                  </div>
+                  <div class="meter-mirror-strip"></div>
+                  <div class="meter-danger-zone" style="top: 0%; height: 10.8%;"></div>
+                  <div class="meter-pointer" id="meter_m1611_power_pointer" style="top: 16.7%;"></div>
+                  <div class="meter-glass-sheen"></div>
+                </div>
+              </div>
+              <div class="meter-value-badge" id="val_m1611_power">100.0 %</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ДЕТАЛЬНАЯ ПАНЕЛЬ ТЕПЛОГИДРАВЛИКИ И НЕЙТРОНИКИ -->
+        <div class="console-card telemetry-card">
+          <div class="panel-screw screw-tl"></div>
+          <div class="panel-screw screw-tr"></div>
+          <div class="panel-screw screw-bl"></div>
+          <div class="panel-screw screw-br"></div>
+
+          <div class="card-title">
+            <span>ПАРАМЕТРЫ ТЕХНОЛОГИЧЕСКОГО РЕЖИМА</span>
+            <span class="plate-badge">АСУ ТП «ТЕМП»</span>
+          </div>
+
+          <div class="telemetry-grid">
+            <div class="telemetry-item">
+              <span class="t-label">T ГОРЯЧЕЙ НИТИ:</span>
+              <span id="val_t_hot" class="t-value">320.0 °C</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">T ХОЛОДНОЙ НИТИ:</span>
+              <span id="val_t_cold" class="t-value">290.0 °C</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">ΔT АКТИВНОЙ ЗОНЫ:</span>
+              <span id="val_dt_core" class="t-value">30.0 °C</span>
+            </div>
+            <div class="telemetry-item highlight-item">
+              <span class="t-label">ЗАПАС ДО КИПЕНИЯ ΔTнас:</span>
+              <span id="val_subcool" class="t-value subcool-accent">25.8 °C</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">КОНЦЕНТРАЦИЯ БОРА:</span>
+              <span id="val_boron" class="t-value">500 ppm</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">T ТОПЛИВА (МАКС):</span>
+              <span id="val_t_fuel" class="t-value">680 °C</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">РАСХОД 1-ГО КОНТУРА:</span>
+              <span id="val_flow_1k" class="t-value">18800 кг/с</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">УРОВЕНЬ В КД-1000:</span>
+              <span id="val_pz_level" class="t-value">7.20 м</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">УРОВЕНЬ В ПГВ-1000:</span>
+              <span id="val_sg_level" class="t-value">2.45 м</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">РАСХОД СВЕЖЕГО ПАРА:</span>
+              <span id="val_steam_flow" class="t-value">1620 кг/с</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">РЕАКТИВНОСТЬ ρ:</span>
+              <span id="val_reactivity" class="t-value">0 pcm</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">ПЕРИОД РЕАКТОРА T:</span>
+              <span id="val_period" class="t-value">∞</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">САОЗ ГИДРОЕМКОСТИ:</span>
+              <span id="val_saoz" class="t-value">ГОТОВ (6.0 МПа)</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">СБРОС БРУ-К:</span>
+              <span id="val_bru_k" class="t-value">ЗАКРЫТ (0%)</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">СБРОС БРУ-А:</span>
+              <span id="val_bru_a" class="t-value">ЗАКРЫТ (0%)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+
+      <!-- ВКЛАДКА 2: ТРЕНДЫ И САМОПИСЕЦ (ПРИБОР ТИПА РП-160) -->
+      <div id="tab_trends" class="tab-content">
+        <div class="trends-container metal-panel">
+          <div class="panel-screw screw-tl"></div>
+          <div class="panel-screw screw-tr"></div>
+          <div class="panel-screw screw-bl"></div>
+          <div class="panel-screw screw-br"></div>
+
+          <div class="card-title">
+            <span>МНОГОТОЧЕЧНЫЙ САМОПИСЕЦ РП-160 (ОСЦИЛЛОГРАФ SCADA)</span>
+            <span class="plate-badge">200 ТОЧЕК</span>
+          </div>
+
+          <div class="chart-canvas-box crt-mini">
+            <canvas id="trendCanvas"></canvas>
+            <div class="chart-glass-sheen"></div>
+          </div>
+
+          <div class="chart-legend metal-sub-panel">
+            <div class="legend-item"><div class="legend-color" style="background:#38bdf8;"></div> N тепл (%)</div>
+            <div class="legend-item"><div class="legend-color" style="background:#3b82f6;"></div> N эл (%)</div>
+            <div class="legend-item"><div class="legend-color" style="background:#ef4444;"></div> Давление 1К</div>
+            <div class="legend-item"><div class="legend-color" style="background:#f59e0b;"></div> Давление 2К</div>
+            <div class="legend-item"><div class="legend-color" style="background:#10b981;"></div> Положение СУЗ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ВКЛАДКА 3: ТАБЛО СИГНАЛИЗАЦИЙ (СВЕТОСИГНАЛЬНЫЕ ТАБЛО БЩУ) -->
+      <div id="tab_alarms" class="tab-content">
+        <div class="console-card metal-panel annunciator-panel-card">
+          <div class="panel-screw screw-tl"></div>
+          <div class="panel-screw screw-tr"></div>
+          <div class="panel-screw screw-bl"></div>
+          <div class="panel-screw screw-br"></div>
+
+          <div class="card-title">
+            <span>ТАБЛО АВАРИЙНО-ПРЕДУПРЕДИТЕЛЬНОЙ СИГНАЛИЗАЦИИ ТСБ</span>
+            <span class="plate-badge">ТСБ-8</span>
+          </div>
+
+          <!-- МАТРИЦА СВЕТОВЫХ ТАБЛО С РЕЛЬЕФНЫМ СТЕКЛОМ -->
+          <div class="annunciator-grid">
+            <div id="ann_az5" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">АЗ-5 СРАБАТЫВАНИЕ</div>
+            </div>
+            <div id="ann_overpower" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">МОЩНОСТЬ &gt; 103%</div>
+            </div>
+            <div id="ann_period" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">ПЕРИОД &lt; 20 С</div>
+            </div>
+            <div id="ann_p1_hi" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">ДАВЛЕНИЕ 1К ВЫСОКОЕ</div>
+            </div>
+            <div id="ann_sg_lo" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">УРОВЕНЬ ПГ НИЗКИЙ</div>
+            </div>
+            <div id="ann_rcp_trip" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">ОТКЛЮЧЕНИЕ ГЦН</div>
+            </div>
+            <div id="ann_grid_loss" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">СБРОС НАГРУЗКИ</div>
+            </div>
+            <div id="ann_leak_1k" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">ТЕЧЬ 1-ГО КОНТУРА</div>
+            </div>
+            <div id="ann_subcool_lo" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">ЗАПАС ДО КИПЕНИЯ &lt; 10°C</div>
+            </div>
+            <div id="ann_saoz" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">САОЗ ВПРЫСК ГЕ-1..4</div>
+            </div>
+            <div id="ann_bru_k" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">БРУ-К СБРОС В КОНДЕНСАТОР</div>
+            </div>
+            <div id="ann_bru_a" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">БРУ-А СБРОС В АТМОСФЕРУ</div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ТЕРМОПЕЧАТЬ / СУТОЧНЫЙ ЖУРНАЛ СООБЩЕНИЙ -->
+        <div class="console-card metal-panel log-card">
+          <div class="panel-screw screw-tl"></div>
+          <div class="panel-screw screw-tr"></div>
+          <div class="panel-screw screw-bl"></div>
+          <div class="panel-screw screw-br"></div>
+
+          <div class="card-title">
+            <span>РЕГИСТРАЦИЯ СОБЫТИЙ СИСТЕМЫ (ТЕЛЕТАЙП ТСБ)</span>
+          </div>
+          <div class="teletype-scroll-box">
+            <table class="alarm-log-table teletype-log">
+              <thead>
+                <tr>
+                  <th style="width: 55px;">ВРЕМЯ</th>
+                  <th style="width: 70px;">УРОВЕНЬ</th>
+                  <th>ТЕХНОЛОГИЧЕСКОЕ СООБЩЕНИЕ</th>
+                </tr>
+              </thead>
+              <tbody id="alarmTableBody">
+                <!-- Заполняется динамически -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ВКЛАДКА 4: ПУЛЬТ ВВОДНЫХ ИНСТРУКТОРА (АВАРИЙНЫЕ СЦЕНАРИИ) -->
+      <div id="tab_scenarios" class="tab-content">
+        <div class="console-card metal-panel instructor-card">
+          <div class="panel-screw screw-tl"></div>
+          <div class="panel-screw screw-tr"></div>
+          <div class="panel-screw screw-bl"></div>
+          <div class="panel-screw screw-br"></div>
+
+          <div class="plate-engraved instructor-plate">
+            <div class="rivet r-tl"></div>
+            <div class="rivet r-tr"></div>
+            <div class="rivet r-bl"></div>
+            <div class="rivet r-br"></div>
+            <span>БЛОК ВВОДА НЕИСПРАВНОСТЕЙ • ДОПУСК: ИНСТРУКТОР ТРЕНАЖЕРА</span>
+          </div>
+
+          <div class="scenario-buttons-stack">
+            <button id="sc_rcp1" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">⚡ Обесточивание и останов ГЦН-1</span>
+                <span class="scenario-desc">Срыв расхода петли 1, срабатывание РОМ</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
+
+            <button id="sc_steam" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">💥 Разрыв главного паропровода 2К</span>
+                <span class="scenario-desc">Резкое падение давления 2К, захолаживание 1К</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
+
+            <button id="sc_loca" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">💧 Течь теплоносителя 1К (LOCA)</span>
+                <span class="scenario-desc">Спад уровня в КД, аварийный ввод гидроемкостей САОЗ</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
+
+            <button id="sc_stuck" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">🔒 Заклинивание поглощающих стержней</span>
+                <span class="scenario-desc">Отказ ШЭМ приводов СУЗ, блокировка перемещения</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
+
+            <button id="sc_grid" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">🔌 Полный сброс электрической нагрузки сети</span>
+                <span class="scenario-desc">Разгон турбины, открытие БРУ-К, разгрузка реактора</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- НИЖНИЙ ГОРИЗОНТАЛЬНЫЙ ПУЛЬТ ОПЕРАТОРА (НАКЛОННЫЙ СТОЛ-ФАРТУК БЩУ) -->
+  <footer class="operator-desk-apron metal-panel">
+    <div class="panel-screw screw-tl"></div>
+    <div class="panel-screw screw-tr"></div>
+    <div class="panel-screw screw-bl"></div>
+    <div class="panel-screw screw-br"></div>
+
+    <div class="desk-apron-container">
+
+      <!-- СЕКЦИЯ 1: АВАРИЙНАЯ ЗАЩИТА РЕАКТОРА АЗ-5 -->
+      <div class="desk-section az5-apron-section hazard-frame">
+        <div class="section-title-plate">
+          <span>АЗ-5 ГОСТ 25804</span>
+        </div>
+        <div class="az5-well-bezel">
+          <!-- МАССИВНОЕ ЖЕЛТОЕ ПРЕДУПРЕЖДАЮЩЕЕ КОЛЬЦО БЕЗОПАСНОСТИ -->
+          <div class="az5-safety-collar">
+            <span class="collar-text collar-top">АВАРИЙНЫЙ ОСТАНОВ</span>
+            <div class="collar-hazard-ring"></div>
+            <span class="collar-text collar-bottom">EMERGENCY STOP • АЗ-5</span>
+          </div>
+          <div class="az5-cover-wrap">
+            <!-- ОТКИДНАЯ ЗАЩИТНАЯ КРЫШКА С ПЕТЛЯМИ И ПРЕДУПРЕЖДЕНИЕМ -->
+            <div id="az5Cover" class="az5-cover" title="Нажмите, чтобы откинуть защитную крышку">
+              <div class="cover-hinge top-hinge">
+                <div class="hinge-pin"></div>
+              </div>
+              <div class="cover-hazard-stripes"></div>
+              <div class="cover-label">▲ ПОДНЯТЬ КРЫШКУ АЗ-5 ▲</div>
+              <div class="tamper-seal">ПЛОМБА № 742</div>
+            </div>
+
+            <!-- МАССИВНАЯ НЕПРОЗРАЧНАЯ КРАСНАЯ ГРИБОВИДНАЯ КНОПКА АЗ-5 -->
+            <button id="btnAz5" class="btn-az5" title="Аварийный сброс всех поглощающих стержней СУЗ">
+              <span class="az5-mushroom-rim"></span>
+              <span class="btn-az5-core">АЗ-5</span>
+            </button>
+          </div>
+        </div>
+        <div class="az5-mini-caption">СБРОС СУЗ ЗА 4 СЕК</div>
+      </div>
+
+      <!-- СЕКЦИЯ 2: ПРИВОД ОР СУЗ (10-Я ГРУППА) -->
+      <div class="desk-section suz-apron-section">
+        <div class="section-title-plate">
+          <span>ПРИВОД ШЭМ-3 • СУЗ-10</span>
+          <span id="rodPosVal" class="metric-val vfd-text-mini">80.0%</span>
+        </div>
+        <!-- Профильный сельсинный индикатор положения -->
+        <div class="edgewise-meter-box">
+          <div class="edgewise-scale-ticks">
+            <span>0%</span><span>50%</span><span>100%</span>
+          </div>
+          <div class="rod-gauge-bar">
+            <div id="rodGaugeFill" class="rod-gauge-fill"></div>
+            <div class="rod-gauge-glass"></div>
+          </div>
+        </div>
+        <div class="rod-button-group">
+          <button id="rodUp" class="btn-rod btn-kme btn-kme-up" title="Извлечение стержней">
+            <span class="kme-lens-dot green"></span>
+            <span class="btn-rod-icon">▲</span> ВВЕРХ
+          </button>
+          <button id="rodStop" class="btn-rod btn-kme btn-kme-stop" title="Остановка электропривода">
+            <span class="btn-rod-icon">■</span> СТОП
+          </button>
+          <button id="rodDown" class="btn-rod btn-kme btn-kme-down" title="Погружение стержней">
+            <span class="kme-lens-dot amber"></span>
+            <span class="btn-rod-icon">▼</span> ВНИЗ
+          </button>
+        </div>
+      </div>
+
+      <!-- СЕКЦИЯ 3: КЛЮЧИ ПМО ГЦН (ПЕТЛИ 1..4) -->
+      <div class="desk-section rcp-apron-section">
+        <div class="section-title-plate">
+          <span>КЛЮЧИ ГЦН-195М (ПМО-Ф45)</span>
+          <span class="plate-badge">4 ПЕТЛИ</span>
+        </div>
+        <div class="rcp-horizontal-grid">
+          <!-- ГЦН-1 -->
+          <div id="rcp_row_0" class="rcp-unit-box switch-row" title="Кликните для переключения ГЦН-1">
+            <div class="rcp-nameplate">ГЦН-1</div>
+            <div class="pmo-switch-body">
+              <div class="pmo-switch-dial">
+                <div class="pmo-dial-ticks">
+                  <span class="pmo-tick pmo-tick-off" title="ОТКЛ"></span>
+                  <span class="pmo-tick pmo-tick-mid"></span>
+                  <span class="pmo-tick pmo-tick-on" title="ВКЛ"></span>
+                </div>
+                <span class="pmo-pos-label pos-off">О</span>
+                <span class="pmo-pos-label pos-on">В</span>
+                <div class="pmo-knob knob-on" id="pmo_knob_0">
+                  <div class="pmo-knob-ribs"></div>
+                  <div class="pmo-pointer"></div>
+                  <div class="pmo-center-cap"></div>
+                </div>
+              </div>
+            </div>
+            <div class="rcp-lamp-cluster">
+              <div class="indicator-lamp-unit" title="ОТКЛ (Зеленый)">
+                <div class="ind-lens off-lens" id="lamp_off_0"></div>
+              </div>
+              <div class="indicator-lamp-unit" title="РАБ (Красный)">
+                <div class="ind-lens on-lens active" id="lamp_on_0"></div>
+              </div>
+            </div>
+            <span id="rcp_badge_0" class="status-badge on" style="display: none;">ВКЛ</span>
+          </div>
+
+          <!-- ГЦН-2 -->
+          <div id="rcp_row_1" class="rcp-unit-box switch-row" title="Кликните для переключения ГЦН-2">
+            <div class="rcp-nameplate">ГЦН-2</div>
+            <div class="pmo-switch-body">
+              <div class="pmo-switch-dial">
+                <div class="pmo-dial-ticks">
+                  <span class="pmo-tick pmo-tick-off" title="ОТКЛ"></span>
+                  <span class="pmo-tick pmo-tick-mid"></span>
+                  <span class="pmo-tick pmo-tick-on" title="ВКЛ"></span>
+                </div>
+                <span class="pmo-pos-label pos-off">О</span>
+                <span class="pmo-pos-label pos-on">В</span>
+                <div class="pmo-knob knob-on" id="pmo_knob_1">
+                  <div class="pmo-knob-ribs"></div>
+                  <div class="pmo-pointer"></div>
+                  <div class="pmo-center-cap"></div>
+                </div>
+              </div>
+            </div>
+            <div class="rcp-lamp-cluster">
+              <div class="indicator-lamp-unit" title="ОТКЛ (Зеленый)">
+                <div class="ind-lens off-lens" id="lamp_off_1"></div>
+              </div>
+              <div class="indicator-lamp-unit" title="РАБ (Красный)">
+                <div class="ind-lens on-lens active" id="lamp_on_1"></div>
+              </div>
+            </div>
+            <span id="rcp_badge_1" class="status-badge on" style="display: none;">ВКЛ</span>
+          </div>
+
+          <!-- ГЦН-3 -->
+          <div id="rcp_row_2" class="rcp-unit-box switch-row" title="Кликните для переключения ГЦН-3">
+            <div class="rcp-nameplate">ГЦН-3</div>
+            <div class="pmo-switch-body">
+              <div class="pmo-switch-dial">
+                <div class="pmo-dial-ticks">
+                  <span class="pmo-tick pmo-tick-off" title="ОТКЛ"></span>
+                  <span class="pmo-tick pmo-tick-mid"></span>
+                  <span class="pmo-tick pmo-tick-on" title="ВКЛ"></span>
+                </div>
+                <span class="pmo-pos-label pos-off">О</span>
+                <span class="pmo-pos-label pos-on">В</span>
+                <div class="pmo-knob knob-on" id="pmo_knob_2">
+                  <div class="pmo-knob-ribs"></div>
+                  <div class="pmo-pointer"></div>
+                  <div class="pmo-center-cap"></div>
+                </div>
+              </div>
+            </div>
+            <div class="rcp-lamp-cluster">
+              <div class="indicator-lamp-unit" title="ОТКЛ (Зеленый)">
+                <div class="ind-lens off-lens" id="lamp_off_2"></div>
+              </div>
+              <div class="indicator-lamp-unit" title="РАБ (Красный)">
+                <div class="ind-lens on-lens active" id="lamp_on_2"></div>
+              </div>
+            </div>
+            <span id="rcp_badge_2" class="status-badge on" style="display: none;">ВКЛ</span>
+          </div>
+
+          <!-- ГЦН-4 -->
+          <div id="rcp_row_3" class="rcp-unit-box switch-row" title="Кликните для переключения ГЦН-4">
+            <div class="rcp-nameplate">ГЦН-4</div>
+            <div class="pmo-switch-body">
+              <div class="pmo-switch-dial">
+                <div class="pmo-dial-ticks">
+                  <span class="pmo-tick pmo-tick-off" title="ОТКЛ"></span>
+                  <span class="pmo-tick pmo-tick-mid"></span>
+                  <span class="pmo-tick pmo-tick-on" title="ВКЛ"></span>
+                </div>
+                <span class="pmo-pos-label pos-off">О</span>
+                <span class="pmo-pos-label pos-on">В</span>
+                <div class="pmo-knob knob-on" id="pmo_knob_3">
+                  <div class="pmo-knob-ribs"></div>
+                  <div class="pmo-pointer"></div>
+                  <div class="pmo-center-cap"></div>
+                </div>
+              </div>
+            </div>
+            <div class="rcp-lamp-cluster">
+              <div class="indicator-lamp-unit" title="ОТКЛ (Зеленый)">
+                <div class="ind-lens off-lens" id="lamp_off_3"></div>
+              </div>
+              <div class="indicator-lamp-unit" title="РАБ (Красный)">
+                <div class="ind-lens on-lens active" id="lamp_on_3"></div>
+              </div>
+            </div>
+            <span id="rcp_badge_3" class="status-badge on" style="display: none;">ВКЛ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- СЕКЦИЯ 4: АВТОМАТИЧЕСКИЕ РЕГУЛЯТОРЫ (САУТ) -->
+      <div class="desk-section regulators-apron-section">
+        <div class="section-title-plate">
+          <span>РЕГУЛЯТОРЫ САУТ</span>
+          <span class="plate-badge">ТВ1-2</span>
+        </div>
+        <div class="regulators-column">
+          <div class="regulator-toggle-row switch-row" id="toggle_arm" title="Режим АРМ">
+            <span class="reg-label">АРМ (Мощность)</span>
+            <div class="toggle-switch-unit">
+              <span class="toggle-tag" id="arm_tag_man">РУЧ</span>
+              <span class="toggle-guard guard-left"></span>
+              <div class="tumbler-bushing">
+                <div class="tumbler-lever active" id="arm_lever">
+                  <span class="tumbler-bat"></span>
+                </div>
+              </div>
+              <span class="toggle-guard guard-right"></span>
+              <span class="status-badge on toggle-tag active" id="arm_tag_auto">АВТ</span>
+            </div>
+          </div>
+          <div class="regulator-toggle-row switch-row" id="toggle_pz" title="Давление КД">
+            <span class="reg-label">КД (ТЭН/Впрыск)</span>
+            <div class="toggle-switch-unit">
+              <span class="toggle-tag" id="pz_tag_man">РУЧ</span>
+              <span class="toggle-guard guard-left"></span>
+              <div class="tumbler-bushing">
+                <div class="tumbler-lever active" id="pz_lever">
+                  <span class="tumbler-bat"></span>
+                </div>
+              </div>
+              <span class="toggle-guard guard-right"></span>
+              <span class="status-badge on toggle-tag active" id="pz_tag_auto">АВТ</span>
+            </div>
+          </div>
+          <div class="regulator-toggle-row switch-row" id="toggle_pen" title="Питание ПГ">
+            <span class="reg-label">ПЭН (Питание)</span>
+            <div class="toggle-switch-unit">
+              <span class="toggle-tag" id="pen_tag_man">РУЧ</span>
+              <span class="toggle-guard guard-left"></span>
+              <div class="tumbler-bushing">
+                <div class="tumbler-lever active" id="pen_lever">
+                  <span class="tumbler-bat"></span>
+                </div>
+              </div>
+              <span class="toggle-guard guard-right"></span>
+              <span class="status-badge on toggle-tag active" id="pen_tag_auto">АВТ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- СЕКЦИЯ 5: ОПЕРАТИВНЫЕ КОМАНДЫ И СВЯЗЬ (100% НЕПРОЗРАЧНЫЕ КНОПКИ КМЕ/КЕ) -->
+      <div class="desk-section actions-apron-section">
+        <div class="section-title-plate">
+          <span>СИГНАЛИЗАЦИЯ И СВЯЗЬ</span>
+          <span class="plate-badge">КЕ-011</span>
+        </div>
+        <div class="actions-button-grid">
+          <button id="btnSilenceHorn" class="btn-kme btn-kme-amber" title="Снять звуковой сигнал аварийной сирены и гонга (СЪЕМ ЗВУКА)">
+            <span class="kme-lens-dot amber"></span>
+            <span>🕭 СЪЕМ ЗВУКА</span>
+          </button>
+          <button id="btnAckAlarms" class="btn-kme btn-kme-white" title="Квитировать поступившие сигналы сигнализации">
+            <span class="kme-lens-dot white"></span>
+            <span>✓ КВИТИРОВАНИЕ</span>
+          </button>
+          <button id="btnTestLamps" class="btn-kme btn-kme-blue" title="Опробовать лампы накаливания всех светосигнальных табло (ОПРОБОВАНИЕ ТАБЛО)">
+            <span class="kme-lens-dot blue"></span>
+            <span>💡 ОПРОБОВАНИЕ ТАБЛО</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- СКРИПТЫ АСУ ТП -->
+  <script src="/static/js/audio.js?v=3.0"></script>
+  <script src="/static/js/mimic.js?v=3.0"></script>
+  <script src="/static/js/chart.js?v=3.0"></script>
+  <script src="/static/js/app.js?v=3.0"></script>
+</body>
+</html>
