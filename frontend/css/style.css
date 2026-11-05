@@ -3759,3 +3759,46 @@ footer.operator-desk-apron {
   transform: translateY(1px);
   box-shadow: inset 0 2px 4px #000000;
 }
+
+
+/* ==========================================================================
+   РЕАЛИСТИЧНЫЕ ТРЕЩИНЫ СТЕКЛА ДЛЯ ПРАВОГО МАНОМЕТРА И СРЕДНЕГО ПРИБОРА
+   ========================================================================== */
+
+/* 1. Правый манометр (P2): ударная паутина трещин от ободка */
+.gauge-cracked-glass {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 25;
+}
+
+.gauge-cracked-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3C!-- Главный луч трещины от точки удара вверху справа (98, 18) --%3E%3Cpath d='M98 18 L90 28 L84 34 L78 38 L68 46 L62 52 L54 62 L48 74 L42 90 L38 104' stroke='rgba(255,255,255,0.85)' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3Cpath d='M98.4 18.4 L90.4 28.4 L84.4 34.4 L78.4 38.4 L68.4 46.4 L62.4 52.4 L54.4 62.4 L48.4 74.4 L42.4 90.4 L38.4 104.4' stroke='rgba(35,25,10,0.55)' stroke-width='0.55' fill='none' stroke-linecap='round'/%3E%3C!-- Ветвь трещины к центру циферблата --%3E%3Cpath d='M78 38 L72 34 L64 36 L56 32 L46 28' stroke='rgba(255,255,255,0.75)' stroke-width='0.55' fill='none' stroke-linecap='round'/%3E%3Cpath d='M78.3 38.3 L72.3 34.3 L64.3 36.3 L56.3 32.3 L46.3 28.3' stroke='rgba(35,25,10,0.45)' stroke-width='0.45' fill='none' stroke-linecap='round'/%3E%3C!-- Ветвь к нижнему правому сектору --%3E%3Cpath d='M68 46 L76 56 L88 64 L96 70 L108 74' stroke='rgba(255,255,255,0.8)' stroke-width='0.6' fill='none' stroke-linecap='round'/%3E%3Cpath d='M68.4 46.4 L76.4 56.4 L88.4 64.4 L96.4 70.4 L108.4 74.4' stroke='rgba(35,25,10,0.5)' stroke-width='0.5' fill='none' stroke-linecap='round'/%3E%3C!-- Микро-трещины в точке удара у ободка --%3E%3Cpath d='M98 18 L104 14 L110 16 M98 18 L94 12 M84 34 L88 42 L94 45' stroke='rgba(255,255,255,0.65)' stroke-width='0.45' fill='none'/%3E%3Cpath d='M98.3 18.3 L104.3 14.3 M84.3 34.3 L88.3 42.3' stroke='rgba(35,25,10,0.35)' stroke-width='0.35' fill='none'/%3E%3C!-- Световой блик вдоль кромки раскола стекла --%3E%3Cpath d='M84 34 L68 46 L54 62' stroke='rgba(255,255,255,0.4)' stroke-width='2.0' fill='none' filter='blur(0.5px)'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+/* 2. Средний профильный прибор М1611 (Реактивность): трещина смотрового окна */
+.meter-cracked-glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 25;
+}
+
+.meter-cracked-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 70 95'%3E%3C!-- Главный диагональный раскол стекла через шкалу и зеркальную полосу --%3E%3Cpath d='M62 12 L56 22 L48 28 L40 38 L32 44 L22 52 L15 62 L8 76 L2 88' stroke='rgba(255,255,255,0.9)' stroke-width='0.65' fill='none' stroke-linecap='round'/%3E%3Cpath d='M62.4 12.4 L56.4 22.4 L48.4 28.4 L40.4 38.4 L32.4 44.4 L22.4 52.4 L15.4 62.4 L8.4 76.4 L2.4 88.4' stroke='rgba(35,25,10,0.55)' stroke-width='0.5' fill='none' stroke-linecap='round'/%3E%3C!-- Боковое ответвление трещины поперек зеркальной полосы --%3E%3Cpath d='M40 38 L48 44 L58 48 L66 50' stroke='rgba(255,255,255,0.75)' stroke-width='0.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M40.3 38.3 L48.3 44.3 L58.3 48.3 L66.3 50.3' stroke='rgba(35,25,10,0.45)' stroke-width='0.4' fill='none' stroke-linecap='round'/%3E%3C!-- Микро-скол у кромки вверху --%3E%3Cpath d='M62 12 L66 8 L68 14 M56 22 L62 26' stroke='rgba(255,255,255,0.6)' stroke-width='0.4' fill='none'/%3E%3Cpath d='M62.3 12.3 L66.3 8.3 M56.3 22.3 L62.3 26.3' stroke='rgba(35,25,10,0.3)' stroke-width='0.3' fill='none'/%3E%3C!-- Оптическое преломление по линии раскола стекла --%3E%3Cpath d='M48 28 L40 38 L32 44 L22 52' stroke='rgba(255,255,255,0.35)' stroke-width='1.8' fill='none' filter='blur(0.4px)'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  opacity: 0.95;
+  pointer-events: none;
+}
