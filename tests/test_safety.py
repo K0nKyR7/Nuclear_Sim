@@ -95,3 +95,44 @@ def test_saoz_alarm_on_injection():
     safety.check_protections(0.05, 1.0, kinetics, primary, pz, sg, secondary, controls)
     assert any("САОЗ" in a.message for a in safety.alarms)
 
+
+
+def test_safety_system_bypassed_allows_overpower():
+    """Проверка режима испытаний: блокировка АЗ-5 предотвращает автоматический останов, но фиксирует критическую тревогу."""
+    safety = SafetySystem()
+    kinetics = KineticsState(relative_neutron_flux=1.15)
+    primary = PrimaryLoopState()
+    pz = PressurizerState()
+    sg = SteamGeneratorState()
+    secondary = SecondaryLoopState()
+    controls = ControlsState(safety_system_bypassed=True)
+
+    state = safety.check_protections(0.05, 1.0, kinetics, primary, pz, sg, secondary, controls)
+    assert state != PlantState.SCRAMMED, "При блокировке АЗ-5 автоматический останов не должен сработать"
+    assert safety.scrammed is False
+    assert any("БЛОКИРОВКА АЗ" in a.message for a in safety.alarms)
+
+    # При этом ручной сброс оператором кнопки АЗ-5 обязан сработать всегда
+    controls.az5_button_pressed = True
+    state2 = safety.check_protections(0.05, 1.0, kinetics, primary, pz, sg, secondary, controls)
+    assert state2 == PlantState.SCRAMMED
+    assert safety.scrammed is True
+
+
+def test_catastrophic_accidents_and_meltdown_states():
+    """Проверка перехода состояний энергоблока в EXPLOSION и MELTDOWN."""
+    engine = SimulationEngine()
+    
+    # 1. Сценарий гильотинного разрыва
+    engine.trigger_scenario("guillotine_loca", True)
+    engine.step()
+    assert engine.thermal_model.primary_rupture is True
+    assert engine.thermal_model.explosion_active is True
+    assert engine.plant_state == PlantState.EXPLOSION
+    assert engine.thermal_model.containment_pressure_kpa > 101.3
+
+    # 2. Сценарий расплавления активной зоны
+    engine.thermal_model.core_damage_pct = 65.0
+    engine.step()
+    assert engine.plant_state == PlantState.MELTDOWN
+    assert engine.thermal_model.radiation_level_mr_h > 100.0

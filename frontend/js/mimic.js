@@ -53,6 +53,21 @@ class PlantMimic {
     this.hasDragged = false;
     this.hudCollapsed = false;
 
+    // Аварийные визуальные эффекты и физика взрывов
+    this.screenShake = 0.0;
+    this.accidentParticles = [];
+    for (let i = 0; i < 60; i++) {
+      this.accidentParticles.push({
+        x: Math.random(),
+        y: Math.random(),
+        vx: (Math.random() - 0.5) * 4.0,
+        vy: -1.0 - Math.random() * 4.0,
+        r: 2.0 + Math.random() * 5.0,
+        t: Math.random(),
+        type: (i % 3 === 0) ? 'smoke' : ((i % 3 === 1) ? 'steam' : 'fire')
+      });
+    }
+
     window.addEventListener('resize', () => this.resize());
     if (typeof ResizeObserver !== 'undefined' && this.canvas && this.canvas.parentElement) {
       this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -127,6 +142,10 @@ class PlantMimic {
     });
 
     return assemblies;
+  }
+
+  triggerScreenShake() {
+    this.screenShake = 1.0;
   }
 
   resize() {
@@ -298,7 +317,18 @@ class PlantMimic {
         this.drawCoreCrossSection(w, h, s);
       } else {
         ctx.save();
-        if (ctx.translate) ctx.translate(this.panX, this.panY);
+        // Динамическая тряска экрана при взрывах и гидроударах
+        let shakeX = 0, shakeY = 0;
+        if (s.explosion_active && this.screenShake < 0.3) {
+          this.screenShake = 1.0;
+        }
+        if (this.screenShake > 0) {
+          const intensity = this.screenShake * 16;
+          shakeX = (Math.random() - 0.5) * intensity;
+          shakeY = (Math.random() - 0.5) * intensity;
+          this.screenShake = Math.max(0, this.screenShake - 0.02);
+        }
+        if (ctx.translate) ctx.translate(this.panX + shakeX, this.panY + shakeY);
         ctx.scale(this.zoom, this.zoom);
         // Опорные координаты агрегатов технологической схемы
         const rx = w * 0.18;    // Реактор ВВЭР-1000
@@ -351,7 +381,14 @@ class PlantMimic {
 
         // 9. Архитектура 4-х петель, САОЗ ГЕ-1..4 и арматура ГОСТ (БРУ-К, БРУ-А)
         this.drawFourLoopsAndSaoz(rx, ry, rw, rh, sgx, sgy, sgw, sgh, pzx, pzy, condx, condy, turbx, turby, s);
+
+        // 10. Аварийные спецэффекты: взрывы, свищи, факелы пара, расплав корума
+        this.drawAccidentAndExplosions(rx, ry, rw, rh, sgx, sgy, sgw, sgh, pzx, pzy, turbx, turby, s);
+
         ctx.restore();
+
+        // 11. Информационная панель аварийного статуса и последствий решений
+        this.drawAccidentHUD(w, h, s);
 
         // Панель навигации зума в левом нижнем углу
         const zoomPct = Math.round(this.zoom * 100);
@@ -645,7 +682,7 @@ class PlantMimic {
 
     // Технологические шильдики температур нитей (выровнены без наложения на ГЦН)
     // Температуры нитей: выносим Tгор левее КД, а Tхол левее ГЦН
-    const hotTagX = (hotStartX + pzx - 4) / 2;
+    const hotTagX = (hotStartX + pzx - 4) / 2 - 18;
     const coldTagX = (coldEndX + gcnX) / 2 - 35;
     this.drawDataTag(hotTagX, hotY - 32, `Tгор: ${s.t_hot_c.toFixed(1)}°C`, '#fca5a5');
     this.drawDataTag(coldTagX, coldY + 32, `Tхол: ${s.t_cold_c.toFixed(1)}°C`, '#93c5fd');
@@ -847,8 +884,21 @@ class PlantMimic {
 
     // ОСЕВОЙ ТЕПЛОВОЙ ГРАДИЕНТ (290°C внизу -> 320°C вверху) И ЧЕРЕНКОВСКОЕ СВЕЧЕНИЕ
     const isScrammed = (s.state === 'SCRAMMED');
+    const coreDmg = Math.max(0, s.core_damage_pct || 0);
     const glowGrad = ctx.createLinearGradient(0, coreBottom, 0, coreTop);
-    if (isScrammed) {
+    if (coreDmg > 30.0) {
+      // Плавление активной зоны (кориум): зловещее раскаленное огненно-лавовое свечение
+      const meltPulse = Math.sin(this.animTime * 5.0) * 0.15 + 0.85;
+      glowGrad.addColorStop(0, `rgba(220, 38, 38, ${0.85 * meltPulse})`);
+      glowGrad.addColorStop(0.4, `rgba(234, 88, 12, ${0.90 * meltPulse})`);
+      glowGrad.addColorStop(0.7, `rgba(250, 204, 21, ${0.95 * meltPulse})`);
+      glowGrad.addColorStop(1, `rgba(255, 255, 255, ${0.80 * meltPulse})`);
+    } else if (coreDmg > 5.0) {
+      // Перегрев и разрушение оболочек ТВЭЛ: оранжево-багровый градиент
+      glowGrad.addColorStop(0, '#7f1d1d');
+      glowGrad.addColorStop(0.5, '#ea580c');
+      glowGrad.addColorStop(1, '#fde047');
+    } else if (isScrammed) {
       // При АЗ-5 черенковское свечение мгновенно гаснет, переходя в глубокое пульсирующее вишневое свечение остаточного энерговыделения
       const decayPulse = Math.sin(this.animTime * 1.8) * 0.12 + 0.88;
       glowGrad.addColorStop(0, `rgba(74, 10, 15, ${0.45 * decayPulse})`);
@@ -970,8 +1020,8 @@ class PlantMimic {
     ctx.fillRect(x + w / 2 - 6, coldNozzleY - 11, 18, 22);
     ctx.strokeRect(x + w / 2 - 6, coldNozzleY - 11, 18, 22);
 
-    // Табличка маркировки реактора KKS
-    this.drawComponentTag(x, top - 56, '10YA01', 'ВВЭР-1000 (В-320)');
+    // Табличка маркировки реактора KKS (свободный отступ над приводами СУЗ)
+    this.drawComponentTag(x, top - 68, '10YA01', 'ВВЭР-1000 (В-320)');
 
     // Телеметрия активной зоны
     this.drawDataTag(x, flangeY + 28, `СУЗ: ${s.rod_position_pct.toFixed(1)}%`, '#f8fafc');
@@ -1065,16 +1115,16 @@ class PlantMimic {
     ctx.lineTo(x + 4, top - 24);
     ctx.stroke();
 
-    // Шильдик 10YP01 КД-1000: размещаем слева у плеча сосуда, исключая контакт с клапаном ИПУ КД
-    this.drawLeaderCallout(x - w / 2, top + 25, x - 100, top + 15, 120, 42, ['10YP01', 'КД-1000'], '#38bdf8');
+    // Шильдик 10YP01 КД-1000: слева у плеча сосуда КД
+    this.drawLeaderCallout(x - w / 2, top + 22, x - 105, top + 16, 126, 40, ['10YP01', 'КД-1000'], '#38bdf8');
 
-    // Телеметрия КД: выноска в свободную верхнюю зону справа от КД (не пересекается с ПГ)
-    const pzCalloutW = 152;
-    const pzCalloutH = 48;
-    const pzCalloutX = x + 78;
-    const pzCalloutY = top + 22;
+    // Телеметрия КД (P1 и L): размещаем слева под шильдиком (гарантирует 100% отсутствие наложений на ПГ!)
+    const pzCalloutW = 148;
+    const pzCalloutH = 46;
+    const pzCalloutX = x - 105;
+    const pzCalloutY = top + 68;
     this.drawLeaderCallout(
-      x + w / 2, top + 35,
+      x - w / 2, top + 65,
       pzCalloutX, pzCalloutY,
       pzCalloutW, pzCalloutH,
       [`P1: ${s.pressure_1k_mpa.toFixed(2)} МПа`, `L: ${s.pz_level_m.toFixed(2)} м`],
@@ -1331,10 +1381,10 @@ class PlantMimic {
     ctx.fillStyle = '#64748b';
     ctx.fillRect(sgSteamX - 7, top - 8, 14, 9);
 
-    // Табличка маркировки ПГ: чистая ГОСТ-выноска над куполом сосуда (без наложений)
+    // Табличка маркировки ПГ: чистая ГОСТ-выноска строго по центру купола ПГВ-1000М
     this.drawLeaderCallout(
-      sgx - 20, top,
-      sgx - 30, top - 40,
+      sgx, top,
+      sgx + 10, top - 38,
       176, 42,
       ['10..40YB10', 'ПГВ-1000М (ПГ-1..4)'],
       '#38bdf8'
@@ -2968,5 +3018,278 @@ class PlantMimic {
     if (this.canvas.style) {
       this.canvas.style.cursor = isHovering ? 'pointer' : 'default';
     }
+  }
+
+  /**
+   * Отрисовка аварийных эффектов: взрывы, свищи высокого давления, дым и расплав активной зоны
+   */
+  drawAccidentAndExplosions(rx, ry, rw, rh, sgx, sgy, sgw, sgh, pzx, pzy, turbx, turby, s) {
+    const ctx = this.ctx;
+    ctx.save();
+
+    const hotY = ry - rh * 0.16;
+    const hotStartX = rx + rw * 0.5 - 4;
+    const sgHotX = sgx - sgw * 0.25;
+    const hotMidX = (hotStartX + sgHotX) / 2;
+    const steamY = turby - 24;
+    const sgSteamX = sgx + 58;
+
+    // 1. РАЗРЫВ ГЛАВНОГО ПАРОПРОВОДА 2К (Свищ пара)
+    if (s.steam_pipe_ruptured || (s.active_scenarios && s.active_scenarios.steam_break)) {
+      ctx.save();
+      // Вырывающийся высоконапорный факел перегретого пара
+      const steamGrad = ctx.createRadialGradient(sgSteamX, steamY, 2, sgSteamX + 30, steamY - 35, 75);
+      steamGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      steamGrad.addColorStop(0.3, 'rgba(224, 242, 254, 0.75)');
+      steamGrad.addColorStop(0.7, 'rgba(186, 230, 253, 0.35)');
+      steamGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+
+      ctx.fillStyle = steamGrad;
+      ctx.beginPath();
+      ctx.moveTo(sgSteamX - 10, steamY);
+      ctx.lineTo(sgSteamX + 75, steamY - 65);
+      ctx.lineTo(sgSteamX + 25, steamY - 75);
+      ctx.lineTo(sgSteamX + 5, steamY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Рваные края лопнувшего металла
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sgSteamX - 12, steamY - 8);
+      ctx.lineTo(sgSteamX - 2, steamY + 8);
+      ctx.lineTo(sgSteamX + 8, steamY - 7);
+      ctx.stroke();
+
+      // Динамические капли и пар
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 15; i++) {
+        const px = sgSteamX + ((i * 19 + this.animTime * 280) % 75);
+        const py = steamY - ((i * 13 + this.animTime * 240) % 65);
+        ctx.beginPath();
+        ctx.arc(px, py, 2.5 + (i % 3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // 2. КАТАСТРОФИЧЕСКИЙ РАЗРЫВ ПЕРВОГО КОНТУРА (ДУ-850 / ГИЛЬОТИНА)
+    if (s.primary_rupture || (s.active_scenarios && (s.active_scenarios.guillotine_loca || s.active_scenarios.loca_leak))) {
+      ctx.save();
+      // Зона разлома горячей нити
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+      ctx.beginPath();
+      ctx.arc(hotMidX, hotY, 32, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Рваные зубчатые кромки металла ДУ-850
+      ctx.strokeStyle = '#f87171';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(hotMidX - 14, hotY - 12);
+      ctx.lineTo(hotMidX - 6, hotY);
+      ctx.lineTo(hotMidX - 16, hotY + 12);
+      ctx.moveTo(hotMidX + 14, hotY - 12);
+      ctx.lineTo(hotMidX + 6, hotY);
+      ctx.lineTo(hotMidX + 16, hotY + 12);
+      ctx.stroke();
+
+      // Мощный выброс вскипающего теплоносителя и радиоактивного пара
+      const blastGrad = ctx.createRadialGradient(hotMidX, hotY, 3, hotMidX, hotY - 45, 90);
+      blastGrad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+      blastGrad.addColorStop(0.25, 'rgba(254, 202, 202, 0.85)');
+      blastGrad.addColorStop(0.6, 'rgba(239, 68, 68, 0.45)');
+      blastGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+
+      ctx.fillStyle = blastGrad;
+      ctx.beginPath();
+      ctx.arc(hotMidX, hotY - 30, 65, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Разлетающиеся брызги теплоносителя 300°C
+      ctx.fillStyle = '#fca5a5';
+      for (let i = 0; i < 20; i++) {
+        const ang = (i / 20) * Math.PI * 2 + this.animTime * 4.0;
+        const dist = 15 + ((i * 17 + this.animTime * 190) % 65);
+        ctx.beginPath();
+        ctx.arc(hotMidX + Math.cos(ang) * dist, hotY + Math.sin(ang) * dist * 0.7, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // 3. ПЛАВЛЕНИЕ АКТИВНОЙ ЗОНЫ (Кориум на днище шахты реактора)
+    const coreDmg = Math.max(0, s.core_damage_pct || 0);
+    if (coreDmg > 25.0) {
+      ctx.save();
+      const bottomHeadY = ry + rh * 0.32;
+      // Лужа расплавленного ядерного топлива (кориума) на сферическом днище
+      const coriumGrad = ctx.createRadialGradient(rx, bottomHeadY, 5, rx, bottomHeadY, rw * 0.38);
+      coriumGrad.addColorStop(0, '#ffffff');
+      coriumGrad.addColorStop(0.3, '#f59e0b');
+      coriumGrad.addColorStop(0.7, '#dc2626');
+      coriumGrad.addColorStop(1, '#450a0a');
+
+      ctx.fillStyle = coriumGrad;
+      ctx.beginPath();
+      ctx.ellipse(rx, bottomHeadY, rw * 0.32, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Пузыри кипящей лавы кориума
+      for (let i = 0; i < 6; i++) {
+        const bx = rx - rw * 0.2 + ((i * 23 + this.animTime * 40) % (rw * 0.4));
+        const by = bottomHeadY - 4 + Math.sin(this.animTime * 6 + i) * 5;
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(bx, by, 3 + (i % 3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Черный радиоактивный дым, поднимающийся вверх
+      ctx.fillStyle = 'rgba(20, 20, 25, 0.45)';
+      for (let i = 0; i < 12; i++) {
+        const sy = bottomHeadY - 15 - ((i * 22 + this.animTime * 65) % (rh * 0.6));
+        const sx = rx + Math.sin(sy * 0.05 + this.animTime * 2) * 16;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 8 + i * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // 4. ВСПЫШКА ВЗРЫВА И УДАРНАЯ ВОЛНА
+    if (s.explosion_active) {
+      ctx.save();
+      let expX = rx, expY = ry;
+      if (s.explosion_type === 'primary_pipe') {
+        expX = hotMidX; expY = hotY;
+      } else if (s.explosion_type === 'steam_pipe') {
+        expX = sgSteamX; expY = steamY;
+      } else if (s.explosion_type === 'meltdown') {
+        expX = rx; expY = ry + rh * 0.30;
+      }
+
+      // Сферическая ударная волна
+      const shockWaveR = ((this.animTime * 420) % 240) + 15;
+      const alphaWave = Math.max(0, 1.0 - shockWaveR / 240);
+      ctx.strokeStyle = `rgba(254, 240, 138, ${alphaWave})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(expX, expY, shockWaveR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Вторая волна
+      ctx.strokeStyle = `rgba(239, 68, 68, ${alphaWave * 0.8})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(expX, expY, Math.max(5, shockWaveR - 35), 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Ослепительная огненная вспышка в эпицентре
+      const flashGrad = ctx.createRadialGradient(expX, expY, 4, expX, expY, 95);
+      flashGrad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+      flashGrad.addColorStop(0.25, 'rgba(253, 224, 71, 0.9)');
+      flashGrad.addColorStop(0.6, 'rgba(239, 68, 68, 0.7)');
+      flashGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+
+      ctx.fillStyle = flashGrad;
+      ctx.beginPath();
+      ctx.arc(expX, expY, 95, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Разлетающиеся раскаленные осколки и искры
+      ctx.fillStyle = '#fef08a';
+      for (let i = 0; i < 24; i++) {
+        const ang = (i / 24) * Math.PI * 2 + (i % 2 === 0 ? 0.2 : -0.2);
+        const dist = ((i * 31 + this.animTime * 500) % 140) + 10;
+        ctx.beginPath();
+        ctx.arc(expX + Math.cos(ang) * dist, expY + Math.sin(ang) * dist, 2.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Информационная панель аварийного статуса и последствий решений
+   */
+  drawAccidentHUD(w, h, s) {
+    const ctx = this.ctx;
+    ctx.save();
+
+    const bannerW = Math.min(460, w * 0.42);
+    const bannerH = 50;
+    const bannerX = 20;
+    const bannerY = 8;
+
+    const coreDmg = Math.max(0, s.core_damage_pct || 0);
+    const isExplosion = s.explosion_active || (s.state === 'EXPLOSION');
+    const isMeltdown = (coreDmg > 35.0) || (s.state === 'MELTDOWN');
+    const isAccident = (s.state === 'ACCIDENT') || s.primary_rupture || s.steam_pipe_ruptured;
+    const isScram = (s.state === 'SCRAMMED');
+    const isBypassed = Boolean(s.safety_system_bypassed);
+
+    // Цвет плашки и пульсация
+    let bgCol = '#0a101d';
+    let borderCol = '#334155';
+    let titleCol = '#38bdf8';
+    let titleText = '✓ ШТАТНЫЙ РЕЖИМ РАБОТЫ (100% Nном)';
+
+    if (isExplosion) {
+      const pulse = Math.sin(this.animTime * 10) * 0.25 + 0.75;
+      bgCol = `rgba(127, 29, 29, ${pulse})`;
+      borderCol = '#ef4444';
+      titleCol = '#fef08a';
+      titleText = '💥 КАТАСТРОФА: ВЗРЫВ ТЕПЛОНОСИТЕЛЯ / РАЗРУШЕНИЕ';
+    } else if (isMeltdown) {
+      const pulse = Math.sin(this.animTime * 6) * 0.2 + 0.8;
+      bgCol = `rgba(146, 64, 14, ${pulse})`;
+      borderCol = '#f59e0b';
+      titleCol = '#fef08a';
+      titleText = '☢ ТЯЖЕЛАЯ АВАРИЯ: ПЛАВЛЕНИЕ АКТИВНОЙ ЗОНЫ';
+    } else if (isAccident) {
+      bgCol = 'rgba(88, 28, 135, 0.85)';
+      borderCol = '#a855f7';
+      titleCol = '#fbcfe8';
+      titleText = '🔥 АВАРИЯ: РАЗГЕРМЕТИЗАЦИЯ / ТЕЧЬ ТЕПЛОНОСИТЕЛЯ';
+    } else if (isScram) {
+      bgCol = 'rgba(15, 23, 42, 0.94)';
+      borderCol = '#f59e0b';
+      titleCol = '#f59e0b';
+      titleText = '⚡ АВАРИЙНЫЙ ОСТАНОВ: АЗ-5 СРАБОТАЛА';
+    }
+
+    // Рамка панели
+    ctx.fillStyle = bgCol;
+    ctx.strokeStyle = borderCol;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Заголовок статуса
+    ctx.font = 'bold 12px Consolas, monospace';
+    ctx.fillStyle = titleCol;
+    ctx.textAlign = 'left';
+    ctx.fillText(titleText, bannerX + 12, bannerY + 18);
+
+    // Строка последствий (метрики ГО, разрушения и радиации)
+    ctx.font = 'bold 11px Consolas, monospace';
+    ctx.fillStyle = '#cbd5e1';
+
+    const dmgStr = coreDmg > 0 ? `АЗ: ${coreDmg.toFixed(0)}% РАЗРУШ` : 'АЗ: 100% ЦЕЛА';
+    const contP = (s.containment_pressure_kpa || 101.3).toFixed(0);
+    const rad = (s.radiation_level_mr_h || 12.0);
+    const radStr = rad > 1000 ? `${(rad / 1000).toFixed(1)} Р/ч` : `${rad.toFixed(0)} мкР/ч`;
+    const h2Str = `H₂: ${(s.hydrogen_pct || 0.0).toFixed(1)}%`;
+    const bypassStr = isBypassed ? ' [АЗ ЗАБЛОК!]' : '';
+
+    ctx.fillText(`${dmgStr} • ГО: ${contP} кПа • РАД: ${radStr} • ${h2Str}${bypassStr}`, bannerX + 12, bannerY + 38);
+
+    ctx.restore();
   }
 }

@@ -39,6 +39,23 @@ class ThermalHydraulicsModel:
         self.steam_leak_fraction = 0.0     # Разрыв паропровода (0..1)
         self.loca_leak_rate_kg_s = 0.0     # Течь теплоносителя 1 контура (кг/с)
         self.grid_disconnected = False     # Сброс нагрузки сети
+        self.guillotine_loca = False        # Гильотинный разрыв ГЦТ Ду-850
+
+        # Аварийные последствия и физические разрушения
+        self.core_damage_pct = 0.0          # Повреждение ТВЭЛ и расплавление зоны (0..100%)
+        self.primary_rupture = False        # Разрыв первого контура от гидроудара/LOCA
+        self.steam_pipe_ruptured = False    # Разрыв паропровода свежего пара
+        self.explosion_active = False       # Активный визуальный взрыв / вспышка
+        self.explosion_type = ""            # "core", "primary_pipe", "steam_pipe", "meltdown"
+        self.explosion_timer = 0.0          # Таймер ударной волны взрыва (сек)
+        self.containment_pressure_kpa = 101.3 # Давление в гермооболочке (кПа)
+        self.radiation_level_mr_h = 12.0    # Радиационный фон в ГО (мкР/ч)
+        self.hydrogen_pct = 0.0             # Концентрация водорода H2 в ГО (%)
+
+    def trigger_explosion(self, exp_type: str) -> None:
+        self.explosion_active = True
+        self.explosion_type = exp_type
+        self.explosion_timer = 3.5
 
     def step(
         self,
@@ -54,6 +71,37 @@ class ThermalHydraulicsModel:
         Интегрирование теплогидравлических параметров за шаг dt.
         """
         dt = max(0.001, dt)
+
+        # -------------------------------------------------------------
+        # 0. Контроль таймера взрыва и разрушений
+        # -------------------------------------------------------------
+        if self.explosion_timer > 0:
+            self.explosion_timer -= dt
+            if self.explosion_timer <= 0:
+                self.explosion_active = False
+
+        # Катастрофический гильотинный разрыв петли ГЦТ Ду-850
+        if self.guillotine_loca and not self.primary_rupture:
+            self.primary_rupture = True
+            self.loca_leak_rate_kg_s = 3400.0
+            self.trigger_explosion("primary_pipe")
+
+        # Гидравлический разрыв 1 контура при запредельном давлении P1 > 21.0 МПа
+        if primary.pressure_mpa > 21.0 and not self.primary_rupture:
+            self.primary_rupture = True
+            self.loca_leak_rate_kg_s = 2800.0
+            self.trigger_explosion("primary_pipe")
+
+        # Разрыв главного паропровода при давлении P2 > 9.2 МПа
+        if sg.steam_pressure_mpa > 9.2 and not self.steam_pipe_ruptured:
+            self.steam_pipe_ruptured = True
+            self.steam_leak_fraction = 1.0
+            self.trigger_explosion("steam_pipe")
+
+        # Тепловой взрыв активной зоны при экстремальном тепловыделении (> 350% Nном)
+        if thermal_power_rel > 1.8 and not self.explosion_active and self.core_damage_pct < 80.0:
+            self.core_damage_pct = min(100.0, self.core_damage_pct + 45.0)
+            self.trigger_explosion("core")
 
         # -------------------------------------------------------------
         # 1. Циркуляция 1 контура и расход ГЦН
@@ -73,13 +121,27 @@ class ThermalHydraulicsModel:
         # 2. Тепловыделение в топливе и передача теплу
         # -------------------------------------------------------------
         current_heat_mw = thermal_power_rel * self.nominal_thermal_mw
-        # Теплопередача от топлива к замедлителю: Q_fuel_cool = K * (T_fuel - T_cool_avg)
-        q_fuel_to_cool = self.k_fuel_coolant * (primary.t_fuel_c - primary.t_coolant_avg_c)
+        # Коэффициент смачивания активной зоны (при тяжелой аварии с течью без САОЗ происходит осушение)
+        core_coverage = 1.0
+        if self.loca_leak_rate_kg_s > 1000.0 and not getattr(primary, 'saoz_active', False):
+            core_coverage = max(0.04, 1.0 - min(1.0, (self.loca_leak_rate_kg_s - 1000.0) / 1000.0 * 0.95))
+        
+        # Теплопередача от топлива к замедлителю с учетом смачивания активной зоны
+        q_fuel_to_cool = self.k_fuel_coolant * (primary.t_fuel_c - primary.t_coolant_avg_c) * core_coverage
         
         # d(T_fuel)/dt = (Q_fission - Q_transferred) / C_fuel
-        d_t_fuel = (current_heat_mw - q_fuel_to_cool) / self.fuel_heat_capacity_mw_s_c
+        # Пароциркониевая экзотермическая реакция при T > 1200 °C: Zr + 2H2O -> ZrO2 + 2H2 + Q
+        q_zirc_mw = 0.0
+        if primary.t_fuel_c > 1200.0:
+            q_zirc_mw = min(450.0, (primary.t_fuel_c - 1200.0) * 0.45)
+            self.hydrogen_pct = min(14.0, self.hydrogen_pct + 0.025 * dt * (primary.t_fuel_c - 1200.0) / 100.0)
+            self.core_damage_pct = min(100.0, self.core_damage_pct + dt * 0.35 * (primary.t_fuel_c - 1200.0) / 100.0)
+            if primary.t_fuel_c > 1850.0 and self.core_damage_pct > 35.0 and not self.explosion_active and self.explosion_timer <= 0:
+                self.trigger_explosion("meltdown")
+
+        d_t_fuel = (current_heat_mw + q_zirc_mw - q_fuel_to_cool) / self.fuel_heat_capacity_mw_s_c
         primary.t_fuel_c += d_t_fuel * dt
-        primary.t_fuel_c = max(100.0, min(2200.0, primary.t_fuel_c))
+        primary.t_fuel_c = max(100.0, min(2800.0, primary.t_fuel_c))
 
         # -------------------------------------------------------------
         # 3. Баланс тепла теплоносителя активной зоны
@@ -276,3 +338,24 @@ class ThermalHydraulicsModel:
         # Расчет температуры насыщения 1 контура и запаса до закипания (субкулинга)
         primary.t_sat_1k_c = 179.9 * (max(0.1, primary.pressure_mpa) ** 0.239)
         primary.subcooling_margin_c = max(0.0, primary.t_sat_1k_c - primary.t_hot_c)
+
+        # -------------------------------------------------------------
+        # 7. Параметры гермооболочки (ГО) и радиационная обстановка
+        # -------------------------------------------------------------
+        # Давление в ГО нарастает при сбросе теплоносителя и пара
+        if self.primary_rupture or self.loca_leak_rate_kg_s > 0:
+            target_cont_p = 101.3 + min(340.0, (self.loca_leak_rate_kg_s / 500.0) * 75.0)
+            self.containment_pressure_kpa += (target_cont_p - self.containment_pressure_kpa) * (dt / 6.0)
+        elif self.steam_pipe_ruptured:
+            self.containment_pressure_kpa += (220.0 - self.containment_pressure_kpa) * (dt / 8.0)
+        else:
+            self.containment_pressure_kpa += (101.3 - self.containment_pressure_kpa) * (dt / 30.0)
+
+        # Радиационный фон: норма 12 мкР/ч; растет пропорционально разрушению активной зоны
+        if self.core_damage_pct > 0.1:
+            rad_target = 12.0 + self.core_damage_pct * 120.0 + (self.core_damage_pct ** 2) * 8.0
+            if self.primary_rupture or self.loca_leak_rate_kg_s > 0:
+                rad_target *= 4.0
+            self.radiation_level_mr_h += (rad_target - self.radiation_level_mr_h) * (dt / 3.0)
+        else:
+            self.radiation_level_mr_h = 12.0

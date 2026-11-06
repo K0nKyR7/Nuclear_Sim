@@ -9,6 +9,8 @@ class ScadaApp {
     this.telemetry = null;
     this.previousState = null;
     this.previousAlarmCount = 0;
+    this.previousExplosion = false;
+    this.previousRupture = false;
     this.lampTestActive = false;
     this.mimic = new PlantMimic('mimicCanvas');
     this.chart = new TelemetryChart('trendCanvas');
@@ -103,6 +105,27 @@ class ScadaApp {
           window.plantAudio.playMatrixPrinterChatter();
         }
         this.previousAlarmCount = alarmCount;
+
+        // Взрыв оборудования / гидроудар / тепловой разгон: звук взрыва и сотрясение экрана
+        if (data.explosion_active && !this.previousExplosion) {
+          window.plantAudio.playExplosionBlast();
+          if (this.mimic) this.mimic.triggerScreenShake();
+        }
+        this.previousExplosion = Boolean(data.explosion_active);
+
+        // Непрерывный свист выброса пара при разгерметизации контуров
+        const isRuptured = Boolean(data.primary_rupture || data.steam_pipe_ruptured);
+        if (isRuptured && !this.previousRupture) {
+          window.plantAudio.startSteamBlowout();
+        } else if (!isRuptured && this.previousRupture) {
+          window.plantAudio.stopSteamBlowout();
+        }
+        this.previousRupture = isRuptured;
+
+        // Радиометрический контроль (треск счетчика Гейгера при радиации)
+        if (typeof data.radiation_level_mr_h === 'number') {
+          window.plantAudio.setRadiationLevel(data.radiation_level_mr_h);
+        }
 
       }
     } catch (e) {
@@ -376,6 +399,10 @@ class ScadaApp {
       this.updateAnnunciator('ann_saoz', Boolean(t.saoz_active), true);
       this.updateAnnunciator('ann_bru_k', num(t.bru_k_pct, 0) > 5.0, false);
       this.updateAnnunciator('ann_bru_a', num(t.bru_a_pct, 0) > 5.0, true);
+      this.updateAnnunciator('ann_explosion', Boolean(t.explosion_active || t.state === 'EXPLOSION'), true);
+      this.updateAnnunciator('ann_meltdown', Boolean(num(t.core_damage_pct, 0) > 25.0 || t.state === 'MELTDOWN'), true);
+      this.updateAnnunciator('ann_radiation', Boolean(num(t.radiation_level_mr_h, 12) > 100.0), true);
+      this.updateAnnunciator('ann_bypass', Boolean(t.safety_system_bypassed), true);
     }
 
 
@@ -389,6 +416,11 @@ class ScadaApp {
       this.updateScenarioButton('sc_loca', t.active_scenarios.loca_leak);
       this.updateScenarioButton('sc_stuck', t.active_scenarios.rod_stuck);
       this.updateScenarioButton('sc_grid', t.active_scenarios.grid_loss);
+      this.updateScenarioButton('sc_prompt', t.active_scenarios.prompt_critical);
+      this.updateScenarioButton('sc_guillotine', t.active_scenarios.guillotine_loca);
+      this.updateScenarioButton('sc_sbo', t.active_scenarios.station_blackout);
+      this.updateScenarioButton('sc_meltdown', t.active_scenarios.core_meltdown);
+      this.updateScenarioButton('sc_bypass', t.active_scenarios.bypass_safety);
     }
   }
 
@@ -580,10 +612,6 @@ class ScadaApp {
       cover.addEventListener('click', (e) => {
         e.stopPropagation();
         const isOpen = cover.classList.toggle('open');
-        const label = cover.querySelector('.cover-label');
-        if (label) {
-          label.textContent = isOpen ? '▲ ЗАКРЫТЬ КРЫШКУ ▲' : '▲ ПОДНЯТЬ КРЫШКУ АЗ-5 ▲';
-        }
         if (window.plantAudio) window.plantAudio.playAz5CoverFlip(isOpen);
       });
     }
@@ -597,8 +625,6 @@ class ScadaApp {
           // Если крышка закрыта, первый клик с щелчком откидывает защитную крышку
           e.stopPropagation();
           cover.classList.add('open');
-          const label = cover.querySelector('.cover-label');
-          if (label) label.textContent = '▲ ЗАКРЫТЬ КРЫШКУ ▲';
           if (window.plantAudio) window.plantAudio.playAz5CoverFlip(true);
           return;
         }
@@ -665,8 +691,6 @@ class ScadaApp {
           const cover = document.getElementById('az5Cover');
           if (cover) {
             cover.classList.remove('open');
-            const label = cover.querySelector('.cover-label');
-            if (label) label.textContent = '▲ ПОДНЯТЬ КРЫШКУ АЗ-5 ▲';
           }
         }
       });
@@ -701,6 +725,37 @@ class ScadaApp {
     bindScenario('sc_loca', 'loca_leak');
     bindScenario('sc_stuck', 'rod_stuck');
     bindScenario('sc_grid', 'grid_loss');
+    bindScenario('sc_prompt', 'prompt_critical');
+    bindScenario('sc_guillotine', 'guillotine_loca');
+    bindScenario('sc_sbo', 'station_blackout');
+    bindScenario('sc_meltdown', 'core_meltdown');
+    bindScenario('sc_bypass', 'bypass_safety');
+
+    // Кнопки борного регулирования
+    const btnAddBoron = document.getElementById('btnAddBoron');
+    if (btnAddBoron) {
+      btnAddBoron.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        this.sendControl('add_boron', 50);
+      });
+    }
+
+    const btnDiluteBoron = document.getElementById('btnDiluteBoron');
+    if (btnDiluteBoron) {
+      btnDiluteBoron.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        this.sendControl('dilute_boron', 50);
+      });
+    }
+
+    // Тумблер аварийной блокировки АЗ-5
+    const toggleSafetyBypass = document.getElementById('toggle_safety_bypass');
+    if (toggleSafetyBypass) {
+      toggleSafetyBypass.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        this.sendControl('toggle_bypass_safety');
+      });
+    }
 
     // Клик по блоку поворотного ключа ГЦН 1..4
     for (let i = 0; i < 4; i++) {

@@ -39,13 +39,18 @@ class SimulationEngine:
         self.is_paused: bool = False
         self.base_dt: float = 0.05    # 20 Гц (50 мс)
 
-        # Активные сценарии отказов
+        # Активные сценарии отказов и тяжелых аварий
         self.active_scenarios: Dict[str, bool] = {
             "rcp1_trip": False,
             "steam_break": False,
             "loca_leak": False,
             "rod_stuck": False,
-            "grid_loss": False
+            "grid_loss": False,
+            "prompt_critical": False,
+            "guillotine_loca": False,
+            "station_blackout": False,
+            "core_meltdown": False,
+            "bypass_safety": False
         }
 
     def reset(self) -> None:
@@ -93,6 +98,24 @@ class SimulationEngine:
         elif command == "ack_alarms":
             for a in self.safety.alarms:
                 a.acknowledged = True
+        elif command == "toggle_bypass_safety":
+            self.controls_state.safety_system_bypassed = not self.controls_state.safety_system_bypassed
+            val = self.controls_state.safety_system_bypassed
+            self.active_scenarios["bypass_safety"] = val
+            if val:
+                self.safety.add_alarm("ОПАСНОСТЬ: Автоматические защиты АЗ-5 заблокированы оператором!", AlarmLevel.CRITICAL, self.sim_time_s)
+            else:
+                self.safety.add_alarm("СУЗ: Автоматические защиты АЗ-5 введены в штатный режим", AlarmLevel.INFO, self.sim_time_s)
+        elif command == "add_boron":
+            # Ввод концентрированной борной кислоты (+50 ppm)
+            self.primary_state.boron_ppm = min(3000.0, self.primary_state.boron_ppm + float(value or 50.0))
+        elif command == "dilute_boron":
+            # Разбавление дистиллятом (-50 ppm)
+            self.primary_state.boron_ppm = max(0.0, self.primary_state.boron_ppm - float(value or 50.0))
+        elif command == "set_bru_k":
+            self.secondary_state.bru_k_pct = max(0.0, min(100.0, float(value)))
+        elif command == "set_bru_a":
+            self.secondary_state.bru_a_pct = max(0.0, min(100.0, float(value)))
 
     def trigger_scenario(self, scenario_id: str, activate: bool) -> None:
         """
@@ -125,6 +148,40 @@ class SimulationEngine:
             if activate:
                 self.secondary_state.turbine_trip_valve = False
                 self.safety.add_alarm("СЕТЬ: Отключение от энергосистемы, сброс электрической нагрузки!", AlarmLevel.CRITICAL, self.sim_time_s)
+
+        elif scenario_id == "prompt_critical":
+            if activate:
+                self.controls_state.auto_power_controller = False
+                self.safety.add_alarm("КАТАСТРОФА: Разгон реактора на мгновенных нейтронах! Реактивность rho > beta_eff!", AlarmLevel.CRITICAL, self.sim_time_s)
+
+        elif scenario_id == "guillotine_loca":
+            self.thermal_model.guillotine_loca = activate
+            if activate:
+                self.safety.add_alarm("КАТАСТРОФА: Мгновенный гильотинный разрыв петли ГЦТ Ду-850!", AlarmLevel.CRITICAL, self.sim_time_s)
+
+        elif scenario_id == "station_blackout":
+            if activate:
+                self.primary_state.rcp_status = [False, False, False, False]
+                self.secondary_state.feedwater_pumps_on = [False, False, False]
+                self.secondary_state.turbine_trip_valve = False
+                self.thermal_model.grid_disconnected = True
+                self.safety.add_alarm("КАТАСТРОФА: Полное обесточивание энергоблока (SBO)! Потеря всех насосов!", AlarmLevel.CRITICAL, self.sim_time_s)
+
+        elif scenario_id == "core_meltdown":
+            if activate:
+                self.thermal_model.loca_leak_rate_kg_s = 2200.0
+                self.primary_state.saoz_accum_level_pct = 0.0
+                self.primary_state.saoz_active = False
+                self.primary_state.rcp_status = [False, False, False, False]
+                self.primary_state.t_fuel_c = max(self.primary_state.t_fuel_c, 1450.0)
+                self.safety.add_alarm("ТЯЖЕЛАЯ АВАРИЯ: Осушение активной зоны, начало плавления ТВЭЛ!", AlarmLevel.CRITICAL, self.sim_time_s)
+
+        elif scenario_id == "bypass_safety":
+            self.controls_state.safety_system_bypassed = activate
+            if activate:
+                self.safety.add_alarm("ВНИМАНИЕ: Автоматические защиты АЗ-5 заблокированы! Защиты отключены!", AlarmLevel.CRITICAL, self.sim_time_s)
+            else:
+                self.safety.add_alarm("СУЗ: Защиты АЗ-5 введены в автоматический режим", AlarmLevel.INFO, self.sim_time_s)
 
     def step(self) -> None:
         """
@@ -162,7 +219,9 @@ class SimulationEngine:
             self.kinetics_state.xenon_rel
         )
 
-        total_rho_pcm = rho_rod + rho_dop + rho_cool + rho_bor + rho_xe
+        # Всплеск реактивности при сценарии разгона на мгновенных нейтронах
+        prompt_spike = 920.0 if self.active_scenarios.get("prompt_critical") else 0.0
+        total_rho_pcm = rho_rod + rho_dop + rho_cool + rho_bor + rho_xe + prompt_spike
 
         self.kinetics_state.rod_reactivity_pcm = rho_rod
         self.kinetics_state.doppler_reactivity_pcm = rho_dop
@@ -206,7 +265,8 @@ class SimulationEngine:
             pz=self.pz_state,
             sg=self.sg_state,
             secondary=self.secondary_state,
-            controls=self.controls_state
+            controls=self.controls_state,
+            thermal_model=self.thermal_model
         )
 
         self.sim_time_s += dt
@@ -264,6 +324,15 @@ class SimulationEngine:
             bru_k_pct=round(self.secondary_state.bru_k_pct, 1),
             bru_a_pct=round(self.secondary_state.bru_a_pct, 1),
             rcp_active_count=sum(1 for s in self.primary_state.rcp_status if s),
+            core_damage_pct=round(self.thermal_model.core_damage_pct, 1),
+            containment_pressure_kpa=round(self.thermal_model.containment_pressure_kpa, 1),
+            radiation_level_mr_h=round(self.thermal_model.radiation_level_mr_h, 1),
+            hydrogen_pct=round(self.thermal_model.hydrogen_pct, 2),
+            primary_rupture=self.thermal_model.primary_rupture,
+            steam_pipe_ruptured=self.thermal_model.steam_pipe_ruptured,
+            explosion_active=self.thermal_model.explosion_active,
+            explosion_type=self.thermal_model.explosion_type,
+            safety_system_bypassed=self.controls_state.safety_system_bypassed,
             alarms=alarm_dicts
         )
 

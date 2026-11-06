@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>БЩУ-1 | ЭНЕРГОБЛОК №1 ВВЭР-1000 | ПУЛЬТ ОПЕРАТОРА</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=1793987777">
+  <link rel="stylesheet" href="/static/css/style.css?v=1794000000">
 </head>
 <body class="desk-body">
 
@@ -549,6 +549,22 @@
               <div class="tile-glass-texture"></div>
               <div class="tile-text">БРУ-А СБРОС В АТМОСФЕРУ</div>
             </div>
+            <div id="ann_explosion" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">ВЗРЫВ ТЕПЛОНОСИТЕЛЯ</div>
+            </div>
+            <div id="ann_meltdown" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">ПЛАВЛЕНИЕ АКТИВНОЙ ЗОНЫ</div>
+            </div>
+            <div id="ann_radiation" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">РАДИАЦИОННАЯ ОПАСНОСТЬ</div>
+            </div>
+            <div id="ann_bypass" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">АЗ-5 ЗАБЛОКИРОВАНА</div>
+            </div>
           </div>
         </div>
 
@@ -685,6 +701,81 @@
                 <span class="scenario-led"></span>
               </div>
             </button>
+
+            <button id="sc_prompt" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">💥 Разгон на мгновенных нейтронах</span>
+                <span class="scenario-desc">Всплеск реактивности ρ > βэфф, тепловой взрыв зоны</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
+
+            <button id="sc_guillotine" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">🌋 Разрыв петли ГЦТ Ду-850 (Гильотина)</span>
+                <span class="scenario-desc">Мгновенный выброс теплоносителя, сброс давления 1К</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
+
+            <button id="sc_sbo" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">⚡ Полное обесточивание блока (SBO)</span>
+                <span class="scenario-desc">Потеря всех ГЦН, ПЭН и потребителей собственных нужд</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
+
+            <button id="sc_meltdown" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">☢ Плавление активной зоны (Кориум)</span>
+                <span class="scenario-desc">Полная потеря теплоотвода, расплав ТВЭЛ до 2200°C</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
+
+            <button id="sc_bypass" class="scenario-btn industrial-toggle-card">
+              <div class="missile-cover-icon">
+                <div class="toggle-guard-wire wire-l"></div>
+                <div class="toggle-mini-lever"></div>
+                <div class="toggle-guard-wire wire-r"></div>
+              </div>
+              <div class="scenario-meta">
+                <span class="scenario-title">⚠️ Блокировка автоматических защит АЗ-5</span>
+                <span class="scenario-desc">Отключение защит для рискованных экспериментов</span>
+              </div>
+              <div class="scenario-lamp-housing">
+                <span class="scenario-led"></span>
+              </div>
+            </button>
           </div>
 
           <!-- НИЖНИЙ БЛОК: ИНДИКАТОРЫ ЦЕПЕЙ АВТОМАТИКИ И КНОПКА СБРОСА НЕИСПРАВНОСТЕЙ -->
@@ -751,16 +842,29 @@
             <span class="collar-text collar-bottom">EMERGENCY STOP • АЗ-5</span>
           </div>
           <div class="az5-cover-wrap">
-            <!-- НЕПОДВИЖНАЯ ОСЬ ВРАЩЕНИЯ И ПЕТЛЯ ШАРНИРА -->
-            <div class="cover-hinge top-hinge">
-              <div class="hinge-pin"></div>
+            <!-- НЕПОДВИЖНАЯ ОСЬ ВРАЩЕНИЯ И КРОНШТЕЙН ШАРНИРА (НАДЕЖНО ЗАКРЕПЛЕН НА ПАНЕЛИ) -->
+            <div class="cover-hinge-assembly">
+              <div class="hinge-bracket hinge-bracket-left"></div>
+              <div class="hinge-barrel">
+                <div class="hinge-pin"></div>
+              </div>
+              <div class="hinge-bracket hinge-bracket-right"></div>
             </div>
 
-            <!-- ОТКИДНАЯ ЗАЩИТНАЯ КРЫШКА (ВРАЩАЕТСЯ ВОКРУГ НЕПОДВИЖНОЙ ОСИ) -->
+            <!-- ОТКИДНАЯ ЗАЩИТНАЯ КРЫШКА (ВРАЩАЕТСЯ СТРОГО ВОКРУГ ОСИ ШАРНИРА) -->
             <div id="az5Cover" class="az5-cover" title="Нажмите, чтобы откинуть защитную крышку">
-              <div class="cover-hazard-stripes"></div>
-              <div class="cover-label">▲ ПОДНЯТЬ КРЫШКУ АЗ-5 ▲</div>
-              <div class="tamper-seal">ПЛОМБА № 742</div>
+              <!-- ЛИЦЕВАЯ СТОРОНА (ВИДНА В ЗАКРЫТОМ СОСТОЯНИИ) -->
+              <div class="az5-cover-face az5-cover-front">
+                <div class="cover-hazard-stripes"></div>
+                <div class="cover-label">▲ ПОДНЯТЬ КРЫШКУ АЗ-5 ▲</div>
+                <div class="tamper-seal">ПЛОМБА № 742</div>
+              </div>
+              <!-- ВНУТРЕННЯЯ СТОРОНА (ВИДНА ПРИ ОТКИДЫВАНИИ, ПРЯМОЙ ЧИТАЕМЫЙ ТЕКСТ) -->
+              <div class="az5-cover-face az5-cover-back">
+                <div class="cover-inner-ribs"></div>
+                <div class="cover-inner-label">▼ ЗАКРЫТЬ КРЫШКУ ▼</div>
+                <div class="cover-inner-sub">АЗ-5 ГОСТ 25804</div>
+              </div>
             </div>
 
             <!-- МАССИВНАЯ НЕПРОЗРАЧНАЯ КРАСНАЯ ГРИБОВИДНАЯ КНОПКА АЗ-5 -->
@@ -771,6 +875,12 @@
           </div>
         </div>
         <div class="az5-mini-caption">СБРОС СУЗ ЗА 4 СЕК</div>
+        <div class="az5-bypass-control" style="margin-top: 8px;">
+          <button id="toggle_safety_bypass" class="btn-safety-bypass" title="Блокировка автоматических защит АЗ-5 для опасных испытаний">
+            <span class="bypass-led"></span>
+            <span>БЛОКИРОВКА АЗ-5</span>
+          </button>
+        </div>
       </div>
 
       <!-- СЕКЦИЯ 2: ПРИВОД ОР СУЗ (10-Я ГРУППА) -->
@@ -801,6 +911,10 @@
             <span class="kme-lens-dot amber"></span>
             <span class="btn-rod-icon">▼</span> ВНИЗ
           </button>
+        </div>
+        <div class="boron-quick-controls" style="display: flex; gap: 8px; margin-top: 8px;">
+          <button id="btnAddBoron" class="btn-boron-ctrl" title="Ввод борной кислоты (+50 ppm)">+ БОР (+50)</button>
+          <button id="btnDiluteBoron" class="btn-boron-ctrl" title="Разбавление чистым конденсатом (-50 ppm)">- ДИСТ (-50)</button>
         </div>
       </div>
 
@@ -1012,9 +1126,9 @@
   </footer>
 
   <!-- СКРИПТЫ АСУ ТП -->
-  <script src="/static/js/audio.js?v=1793987777"></script>
-  <script src="/static/js/mimic.js?v=1793993333"></script>
-  <script src="/static/js/chart.js?v=1793987777"></script>
-  <script src="/static/js/app.js?v=1793987777"></script>
+  <script src="/static/js/audio.js?v=1794000000"></script>
+  <script src="/static/js/mimic.js?v=1794000000"></script>
+  <script src="/static/js/chart.js?v=1794000000"></script>
+  <script src="/static/js/app.js?v=1794000000"></script>
 </body>
 </html>

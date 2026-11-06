@@ -1566,12 +1566,83 @@ footer.operator-desk-apron {
   z-index: 10;
 }
 
-/* Откидная защитная крышка */
+/* Неподвижный промышленный шарнирный узел с жестким креплением к рамке */
+.cover-hinge-assembly {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 76px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 35;
+  pointer-events: none;
+}
+
+.hinge-bracket {
+  width: 9px;
+  height: 10px;
+  background: linear-gradient(180deg, #64748b 0%, #334155 50%, #0f172a 100%);
+  border: 1px solid #94a3b8;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), inset 0 1px 1px #cbd5e1;
+}
+
+.hinge-barrel {
+  flex: 1;
+  height: 8px;
+  margin: 0 2px;
+  background: linear-gradient(180deg, #f1f5f9 0%, #cbd5e1 35%, #64748b 70%, #1e293b 100%);
+  border: 1px solid #94a3b8;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7), inset 0 1px 1px #ffffff;
+  position: relative;
+}
+
+.hinge-pin {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 1px;
+  box-shadow: 0 0 3px #ffffff;
+}
+
+/* Откидная защитная крышка с осью вращения строго по линии шарнира */
 .az5-cover {
   position: absolute;
   top: 0;
   width: 126px;
   height: 70px;
+  cursor: pointer;
+  z-index: 25;
+  transform-origin: 50% 0px;
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.25), box-shadow 0.35s ease;
+  box-shadow: 
+    0 6px 14px #000000,
+    0 0 0 1px rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+}
+
+.az5-cover-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Лицевая наружная сторона (желтая с полосами безопасности и пломбой) */
+.az5-cover-front {
   background-color: #ca8a04;
   background-image: 
     linear-gradient(180deg, #facc15 0%, #eab308 30%, #a16207 100%),
@@ -1579,49 +1650,49 @@ footer.operator-desk-apron {
   border: 2px solid #fef08a;
   border-top-color: #ffffff;
   border-bottom-color: #713f12;
-  border-radius: 6px;
-  cursor: pointer;
-  z-index: 25;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   color: #000000;
   font-size: 9.5px;
   font-weight: 900;
   letter-spacing: 0.6px;
-  transform-origin: top center;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-  box-shadow: 
-    0 6px 12px #000000,
-    inset 0 1px 2px #ffffff,
-    inset 0 -2px 3px #713f12;
+  box-shadow: inset 0 1px 2px #ffffff, inset 0 -2px 3px #713f12;
 }
 
-.cover-hinge {
+/* Внутренняя сторона крышки (видна при откидывании, прямой незеркальный текст) */
+.az5-cover-back {
+  transform: rotateX(180deg);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 60%, #090d14 100%);
+  border: 2px solid #475569;
+  border-top-color: #334155;
+  border-bottom-color: #64748b;
+  color: #cbd5e1;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.95);
+}
+
+.cover-inner-ribs {
   position: absolute;
-  top: -5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 58px;
-  height: 9px;
-  background: linear-gradient(180deg, #cbd5e1 0%, #64748b 45%, #1e293b 100%);
-  border: 1px solid #94a3b8;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px #000000;
-  z-index: 40;
+  inset: 5px;
+  border: 1px dashed rgba(148, 163, 184, 0.25);
+  border-radius: 3px;
   pointer-events: none;
 }
 
-.cover-hinge .hinge-pin {
-  position: absolute;
-  top: 2px;
-  left: 4px;
-  right: 4px;
-  height: 2px;
-  background: #ffffff;
-  border-radius: 1px;
-  box-shadow: 0 0 2px #ffffff;
+.cover-inner-label {
+  font-family: var(--font-gost);
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #facc15;
+  letter-spacing: 0.8px;
+  text-shadow: 0 1px 3px #000000;
+  z-index: 2;
+}
+
+.cover-inner-sub {
+  font-size: 7.5px;
+  color: #94a3b8;
+  letter-spacing: 0.6px;
+  margin-top: 3px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .cover-hazard-stripes {
@@ -1659,8 +1730,8 @@ footer.operator-desk-apron {
 }
 
 .az5-cover.open {
-  transform: rotateX(112deg);
-  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.75), 0 -2px 10px rgba(234, 179, 8, 0.4);
+  transform: rotateX(115deg);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.85), 0 -2px 10px rgba(234, 179, 8, 0.35);
 }
 
 /* Массивная красная грибовидная кнопка АЗ-5 */
@@ -3830,4 +3901,73 @@ footer.operator-desk-apron {
   background-size: 100% 100%;
   opacity: 1;
   pointer-events: none;
+}
+
+
+/* Аварийные кнопки блокировки АЗ-5 и борного регулирования */
+.btn-safety-bypass {
+  width: 100%;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border: 1.5px solid #475569;
+  border-radius: 4px;
+  color: #cbd5e1;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-safety-bypass:hover {
+  background: #334155;
+  border-color: #f59e0b;
+}
+
+.btn-safety-bypass.active {
+  background: #78350f !important;
+  border-color: #f59e0b !important;
+  color: #fef08a !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+}
+
+.btn-safety-bypass .bypass-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #475569;
+  display: inline-block;
+}
+
+.btn-safety-bypass.active .bypass-led {
+  background: #f59e0b !important;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.btn-boron-ctrl {
+  flex: 1;
+  padding: 5px 8px;
+  background: #1e293b;
+  border: 1.5px solid #334155;
+  border-radius: 4px;
+  color: #93c5fd;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-boron-ctrl:hover {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+.btn-boron-ctrl:active {
+  transform: translateY(1px);
 }

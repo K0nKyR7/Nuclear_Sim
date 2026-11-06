@@ -77,7 +77,7 @@ class KineticsModel:
             n_next = self.n + source * dt
 
         # Ограничим диапазон мощности физическими рамками
-        n_next = max(1e-7, min(2.5, n_next))
+        n_next = max(1e-7, min(10.0, n_next))
 
         # Обновляем концентрации предшественников
         n_avg = 0.5 * (self.n + n_next)

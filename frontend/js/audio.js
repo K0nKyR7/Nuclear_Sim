@@ -16,6 +16,9 @@ class PlantAudioEngine {
     this.turbineWhine = null;
     this.alarmTimeout = null;
     this.isSirenPlaying = false;
+    this.steamNoiseNode = null;
+    this.steamGainNode = null;
+    this.radiationLevel = 12.0;
 
     this.setupListeners();
   }
@@ -153,12 +156,24 @@ class PlantAudioEngine {
    */
   startGeigerRoutine() {
     const loop = () => {
-      if (this.ctx && !this.isMuted && Math.random() < 0.25) {
-        this.playGeigerClick();
+      if (this.ctx && !this.isMuted) {
+        const rad = Math.max(12.0, this.radiationLevel || 12.0);
+        // При росте радиации шанс щелчка растет, а интервал падает
+        const prob = Math.min(0.95, 0.25 + Math.log10(rad / 10.0) * 0.22);
+        if (Math.random() < prob) {
+          this.playGeigerClick();
+        }
       }
-      setTimeout(loop, 300 + Math.random() * 950);
+      const rad = Math.max(12.0, this.radiationLevel || 12.0);
+      const minDelay = Math.max(25, 450 - Math.min(420, Math.log10(rad / 10.0) * 110));
+      const jitter = Math.max(20, 800 - Math.min(760, Math.log10(rad / 10.0) * 200));
+      setTimeout(loop, minDelay + Math.random() * jitter);
     };
     loop();
+  }
+
+  setRadiationLevel(mr_h) {
+    this.radiationLevel = Number(mr_h) || 12.0;
   }
 
   playGeigerClick() {
@@ -554,6 +569,138 @@ class PlantAudioEngine {
         osc.stop(t + 0.017);
       }
     } catch (e) {}
+  }
+
+  /**
+   * Мощный процедурный звук взрыва / гидроудара / разрушения контура
+   */
+  playExplosionBlast() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      // 1. Низкочастотный суб-басовый ударный импульс (дроп 110 -> 25 Гц)
+      const subOsc = this.ctx.createOscillator();
+      const subGain = this.ctx.createGain();
+      subOsc.type = 'triangle';
+      subOsc.frequency.setValueAtTime(120, now);
+      subOsc.frequency.exponentialRampToValueAtTime(24, now + 1.8);
+
+      subGain.gain.setValueAtTime(0.85, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
+
+      subOsc.connect(subGain);
+      subGain.connect(targetGain);
+      subOsc.start(now);
+      subOsc.stop(now + 2.3);
+
+      // 2. Взрывной шумовой фронт волны с резонансным фильтром
+      const bufferSize = this.ctx.sampleRate * 2.5;
+      const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+
+      const whiteNoise = this.ctx.createBufferSource();
+      whiteNoise.buffer = noiseBuffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(800, now);
+      filter.frequency.exponentialRampToValueAtTime(80, now + 2.2);
+      filter.Q.setValueAtTime(3.5, now);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.75, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
+
+      whiteNoise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(targetGain);
+
+      whiteNoise.start(now);
+      whiteNoise.stop(now + 2.5);
+
+      // 3. Металлический скрежет лопнувшего металла
+      const metalOsc = this.ctx.createOscillator();
+      const metalGain = this.ctx.createGain();
+      metalOsc.type = 'sawtooth';
+      metalOsc.frequency.setValueAtTime(340, now);
+      metalOsc.frequency.linearRampToValueAtTime(180, now + 0.4);
+
+      metalGain.gain.setValueAtTime(0.35, now);
+      metalGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+      metalOsc.connect(metalGain);
+      metalGain.connect(targetGain);
+      metalOsc.start(now);
+      metalOsc.stop(now + 0.52);
+
+      console.log('[SCADA Audio] Звуковой эффект взрыва воспроизведен');
+    } catch (err) {
+      console.warn('[SCADA Audio] Ошибка синтеза взрыва:', err);
+    }
+  }
+
+  /**
+   * Непрерывный свист и шипение фонтана пара высокого давления
+   */
+  startSteamBlowout() {
+    this.ensureReady();
+    if (!this.ctx || this.steamNoiseNode) return;
+
+    try {
+      const bufferSize = this.ctx.sampleRate * 2.0;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      this.steamNoiseNode = this.ctx.createBufferSource();
+      this.steamNoiseNode.buffer = buffer;
+      this.steamNoiseNode.loop = true;
+
+      const bandpass = this.ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.setValueAtTime(1400, this.ctx.currentTime);
+      bandpass.Q.setValueAtTime(1.8, this.ctx.currentTime);
+
+      this.steamGainNode = this.ctx.createGain();
+      this.steamGainNode.gain.setValueAtTime(0.0, this.ctx.currentTime);
+      this.steamGainNode.gain.linearRampToValueAtTime(0.32, this.ctx.currentTime + 0.8);
+
+      this.steamNoiseNode.connect(bandpass);
+      bandpass.connect(this.steamGainNode);
+      this.steamGainNode.connect(this.masterGain || this.ctx.destination);
+
+      this.steamNoiseNode.start();
+      console.log('[SCADA Audio] Шипение разрыва паропровода запущено');
+    } catch (e) {
+      console.warn('[SCADA Audio] Ошибка звука пара:', e);
+    }
+  }
+
+  stopSteamBlowout() {
+    if (!this.steamNoiseNode || !this.ctx) return;
+    try {
+      const now = this.ctx.currentTime;
+      this.steamGainNode.gain.linearRampToValueAtTime(0.0001, now + 0.5);
+      setTimeout(() => {
+        if (this.steamNoiseNode) {
+          try { this.steamNoiseNode.stop(); } catch (e) {}
+          this.steamNoiseNode = null;
+          this.steamGainNode = null;
+        }
+      }, 550);
+    } catch (e) {
+      this.steamNoiseNode = null;
+      this.steamGainNode = null;
+    }
   }
 }
 

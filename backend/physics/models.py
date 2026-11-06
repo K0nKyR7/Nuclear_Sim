@@ -9,6 +9,8 @@ class PlantState(str, Enum):
     SCRAMMED = "SCRAMMED"                   # Аварийная защита (АЗ-5)
     TRIPPED = "TRIPPED"                     # Автоматический останов защитами
     ACCIDENT = "ACCIDENT"                   # Аварийный режим
+    EXPLOSION = "EXPLOSION"                 # Взрыв оборудования / гидроудар
+    MELTDOWN = "MELTDOWN"                   # Плавление активной зоны
 
 
 class AlarmLevel(str, Enum):
@@ -144,6 +146,8 @@ class ControlsState:
     target_power_mw: float = 1000.0
     # Кнопка АЗ-5 нажата
     az5_button_pressed: bool = False
+    # Блокировка автоматических защит АЗ-5 (испытательный/аварийный режим оператора)
+    safety_system_bypassed: bool = False
 
 
 @dataclass
@@ -189,4 +193,14 @@ class TelemetryData:
     bru_a_pct: float
     # Состояния оборудования
     rcp_active_count: int
+    # Аварийные последствия и целостность конструкций
+    core_damage_pct: float = 0.0
+    containment_pressure_kpa: float = 101.3
+    radiation_level_mr_h: float = 12.0
+    hydrogen_pct: float = 0.0
+    primary_rupture: bool = False
+    steam_pipe_ruptured: bool = False
+    explosion_active: bool = False
+    explosion_type: str = ""
+    safety_system_bypassed: bool = False
     alarms: List[Dict[str, Any]] = field(default_factory=list)
