@@ -644,10 +644,11 @@ class PlantMimic {
     }
 
     // Технологические шильдики температур нитей (выровнены без наложения на ГЦН)
-    const hotTagX = (hotStartX + gcnX) / 2 - 15;
-    const coldTagX = (coldEndX + gcnX) / 2 - 15;
-    this.drawDataTag(hotTagX, hotY - 34, `Tгор: ${s.t_hot_c.toFixed(1)}°C`, '#fca5a5');
-    this.drawDataTag(coldTagX, coldY + 34, `Tхол: ${s.t_cold_c.toFixed(1)}°C`, '#93c5fd');
+    // Температуры нитей: выносим Tгор левее КД, а Tхол левее ГЦН
+    const hotTagX = (hotStartX + pzx - 4) / 2;
+    const coldTagX = (coldEndX + gcnX) / 2 - 35;
+    this.drawDataTag(hotTagX, hotY - 32, `Tгор: ${s.t_hot_c.toFixed(1)}°C`, '#fca5a5');
+    this.drawDataTag(coldTagX, coldY + 32, `Tхол: ${s.t_cold_c.toFixed(1)}°C`, '#93c5fd');
 
     ctx.restore();
   }
@@ -1065,27 +1066,20 @@ class PlantMimic {
     ctx.stroke();
 
     // Шильдик 10YP01 КД-1000: размещаем слева у плеча сосуда, исключая контакт с клапаном ИПУ КД
-    this.drawComponentTag(x - 100, top + 4, '10YP01', 'КД-1000');
+    this.drawLeaderCallout(x - w / 2, top + 25, x - 100, top + 15, 120, 42, ['10YP01', 'КД-1000'], '#38bdf8');
 
-    // Цифровая телеметрия КД в защищённой плашке справа от дыхательного трубопровода
-    const pzBadgeW = 158;
-    const pzBadgeH = 54;
-    const pzBadgeX = x + 20;
-    const pzBadgeY = top + h + 6;
-    ctx.fillStyle = 'rgba(10, 18, 30, 0.94)';
-    ctx.strokeStyle = '#1e3a5f';
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.roundRect(pzBadgeX, pzBadgeY, pzBadgeW, pzBadgeH, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.font = 'bold 17px Consolas, monospace';
-    ctx.fillStyle = '#38bdf8';
-    ctx.textAlign = 'center';
-    ctx.fillText(`P1: ${s.pressure_1k_mpa.toFixed(2)} МПа`, pzBadgeX + pzBadgeW / 2, pzBadgeY + 22);
-    ctx.font = 'bold 16px Consolas, monospace';
-    ctx.fillText(`L: ${s.pz_level_m.toFixed(2)} м`, pzBadgeX + pzBadgeW / 2, pzBadgeY + 44);
+    // Телеметрия КД как аккуратная выноска справа от сосуда (выше горячей нити)
+    const pzCalloutW = 156;
+    const pzCalloutH = 50;
+    const pzCalloutX = x + 115;
+    const pzCalloutY = top + h - 28;
+    this.drawLeaderCallout(
+      x + w / 2, top + h * 0.70,
+      pzCalloutX, pzCalloutY,
+      pzCalloutW, pzCalloutH,
+      [`P1: ${s.pressure_1k_mpa.toFixed(2)} МПа`, `L: ${s.pz_level_m.toFixed(2)} м`],
+      '#38bdf8'
+    );
 
     ctx.restore();
   }
@@ -1340,27 +1334,18 @@ class PlantMimic {
     // Табличка маркировки ПГ (смещена влево от паропровода: гарантированный зазор > 20px)
     this.drawComponentTag(sgx - 45, top - 54, '10..40YB10', 'ПГВ-1000М (ПГ-1..4)');
 
-    // 8. ПАРАМЕТРЫ 2-ГО КОНТУРА (Аккуратный шильдик телеметрии с фоновой плашкой)
-    const tagW = 178;
-    const tagH = 54;
-    const tagX = sgx - 30;
-    const tagY = bottom + 8;
-
-    ctx.fillStyle = '#090e15';
-    ctx.strokeStyle = '#2d3b4b';
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.roundRect(tagX - tagW / 2, tagY, tagW, tagH, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.font = 'bold 17px Consolas, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`P2: ${s.pressure_2k_mpa.toFixed(2)} МПа`, tagX, tagY + 22);
-    ctx.font = 'bold 16px Consolas, monospace';
-    ctx.fillStyle = '#e2e8f0';
-    ctx.fillText(`Ур: ${s.sg_level_m.toFixed(2)} м`, tagX, tagY + 44);
+    // 8. ПАРАМЕТРЫ 2-ГО КОНТУРА (Выноска параметров ПГ с чётким зазором от питлинии)
+    const sgCalloutW = 168;
+    const sgCalloutH = 50;
+    const sgCalloutX = sgx - 42;
+    const sgCalloutY = bottom + 34;
+    this.drawLeaderCallout(
+      sgx - 10, bottom,
+      sgCalloutX, sgCalloutY,
+      sgCalloutW, sgCalloutH,
+      [`P2: ${s.pressure_2k_mpa.toFixed(2)} МПа`, `Ур: ${s.sg_level_m.toFixed(2)} м`],
+      '#38bdf8'
+    );
 
     ctx.restore();
   }
@@ -1592,8 +1577,9 @@ class PlantMimic {
     ctx.fillText(`${s.electric_power_mw.toFixed(0)} МВт`, genX, y + genH / 2 + 14);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 16px Consolas, monospace';
-    ctx.fillText(`${s.turbine_rpm.toFixed(0)} об/мин`, hpcX, y + 36);
+    ctx.font = 'bold 15px Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${s.turbine_rpm.toFixed(0)} об/мин`, hpcX - 16, y + 42);
 
     ctx.restore();
   }
@@ -1629,12 +1615,16 @@ class PlantMimic {
     ctx.fillStyle = '#0369a1';
     ctx.fillRect(x - w / 2 + 3, y + 8, w - 6, h / 2 - 10);
 
-    this.drawComponentTag(x, y - 54, '40AA01', 'КОНДЕНСАТОР');
+    this.drawComponentTag(x, y - 56, '40AA01', 'КОНДЕНСАТОР');
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 16.5px Consolas, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`Pвак: ${s.condenser_vacuum_kpa.toFixed(1)} кПа`, x, y + 20);
+    // Выноска вакуума под конденсатором (без пересечения с линией питводы)
+    this.drawLeaderCallout(
+      x, y + h / 2,
+      x, y + h / 2 + 32,
+      170, 32,
+      [`Pвак: ${s.condenser_vacuum_kpa.toFixed(1)} кПа`],
+      '#38bdf8'
+    );
 
     ctx.restore();
   }
@@ -1754,6 +1744,63 @@ class PlantMimic {
     }
   }
 
+  drawLeaderCallout(targetX, targetY, boxCenterX, boxCenterY, w, h, textLines, mainColor) {
+    const ctx = this.ctx;
+    ctx.save();
+
+    // 1. Leader pointer line
+    ctx.strokeStyle = mainColor || '#38bdf8';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(targetX, targetY, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = mainColor || '#38bdf8';
+    ctx.fill();
+
+    // Calculate nearest edge/corner of box to target
+    const edgeX = (targetX < boxCenterX - w / 2) ? (boxCenterX - w / 2) : (targetX > boxCenterX + w / 2 ? boxCenterX + w / 2 : boxCenterX);
+    const edgeY = (targetY < boxCenterY - h / 2) ? (boxCenterY - h / 2) : (targetY > boxCenterY + h / 2 ? boxCenterY + h / 2 : boxCenterY);
+
+    ctx.beginPath();
+    ctx.moveTo(targetX, targetY);
+    // Draw knee leader line if angled
+    if (Math.abs(targetX - edgeX) > 10 && Math.abs(targetY - edgeY) > 10) {
+      const midX = (targetX + edgeX) / 2;
+      ctx.lineTo(midX, targetY);
+      ctx.lineTo(edgeX, edgeY);
+    } else {
+      ctx.lineTo(edgeX, edgeY);
+    }
+    ctx.stroke();
+
+    // 2. Box
+    ctx.fillStyle = '#0a0f16';
+    ctx.strokeStyle = '#38485c';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.roundRect(boxCenterX - w / 2, boxCenterY - h / 2, w, h, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // 3. Text lines
+    if (textLines && textLines.length > 0) {
+      ctx.textAlign = 'center';
+      if (textLines.length === 1) {
+        ctx.font = 'bold 16px Consolas, monospace';
+        ctx.fillStyle = mainColor || '#38bdf8';
+        ctx.fillText(textLines[0], boxCenterX, boxCenterY + 5.5);
+      } else {
+        ctx.font = 'bold 15px Consolas, monospace';
+        ctx.fillStyle = mainColor || '#38bdf8';
+        ctx.fillText(textLines[0], boxCenterX, boxCenterY - 4);
+        ctx.font = 'bold 14px Consolas, monospace';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(textLines[1], boxCenterX, boxCenterY + 15);
+      }
+    }
+
+    ctx.restore();
+  }
+
   drawComponentTag(x, y, kks, name, customW) {
     const ctx = this.ctx;
     ctx.save();
@@ -1806,7 +1853,7 @@ class PlantMimic {
   /**
    * Стандартизированные условные графические обозначения арматуры ГОСТ 2.785-70 / ГОСТ 2.784-96
    */
-  drawGostValve(x, y, type, state, label, valueText, isVertical) {
+  drawGostValve(x, y, type, state, label, valueText, isVertical, flipLabelRight) {
     const ctx = this.ctx;
     ctx.save();
 
@@ -1902,7 +1949,7 @@ class PlantMimic {
       ctx.font = 'bold 16px Consolas, monospace';
       ctx.textAlign = 'center';
       const ly = isVertical ? y - L - 10 : y - H - 24;
-      const lx = x + (isVertical ? 32 : 0);
+      const lx = x + (isVertical ? (flipLabelRight ? 42 : 32) : 0);
       const metrics = ctx.measureText ? ctx.measureText(label) : { width: 62 };
       const tw = Math.max(58, (metrics.width || 62) + 16);
       const th = 24;
@@ -2004,7 +2051,7 @@ class PlantMimic {
       // Обратный клапан САОЗ по ГОСТ
       const vX = (tankX + tankW / 2 + rx - rw * 0.5) / 2;
       const vY = (tankY + connY) / 2;
-      this.drawGostValve(vX, vY, 'check', isInjecting ? 'open' : 'closed', `САОЗ-${i + 1}`);
+      this.drawGostValve(vX, vY, 'check', isInjecting ? 'open' : 'closed', `САОЗ-${i + 1}`, null, false, false);
 
       // Маркировка емкости
       ctx.fillStyle = '#94a3b8';
@@ -2093,7 +2140,7 @@ class PlantMimic {
     const feedY = condy + 12;
     const feedCornerX = sgx + sgw * 0.42;
     const feedCheckY = (sgy + sgh / 2 + feedY) / 2;
-    this.drawGostValve(feedCornerX, feedCheckY, 'check', 'open', 'ОК ПВ', null, true);
+    this.drawGostValve(feedCornerX, feedCheckY, 'check', 'open', 'ОК ПВ', null, true, true);
 
     // 3. МАТРИЦА 4-Х ПЕТЕЛЬ (ПГ-1..4, ГЦН-1..4)
     this.renderedRcps = [];
