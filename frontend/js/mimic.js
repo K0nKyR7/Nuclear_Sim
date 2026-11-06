@@ -646,8 +646,8 @@ class PlantMimic {
     // Технологические шильдики температур нитей (выровнены без наложения на ГЦН)
     const hotTagX = (hotStartX + gcnX) / 2 - 15;
     const coldTagX = (coldEndX + gcnX) / 2 - 15;
-    this.drawDataTag(hotTagX, hotY - 26, `Tгор: ${s.t_hot_c.toFixed(1)}°C`, '#fca5a5');
-    this.drawDataTag(coldTagX, coldY + 26, `Tхол: ${s.t_cold_c.toFixed(1)}°C`, '#93c5fd');
+    this.drawDataTag(hotTagX, hotY - 30, `Tгор: ${s.t_hot_c.toFixed(1)}°C`, '#fca5a5');
+    this.drawDataTag(coldTagX, coldY + 30, `Tхол: ${s.t_cold_c.toFixed(1)}°C`, '#93c5fd');
 
     ctx.restore();
   }
@@ -970,11 +970,11 @@ class PlantMimic {
     ctx.strokeRect(x + w / 2 - 6, coldNozzleY - 11, 18, 22);
 
     // Табличка маркировки реактора KKS
-    this.drawComponentTag(x, top - 38, '10YA01', 'ВВЭР-1000 (В-320)');
+    this.drawComponentTag(x, top - 48, '10YA01', 'ВВЭР-1000 (В-320)');
 
     // Телеметрия активной зоны
     this.drawDataTag(x, flangeY + 28, `СУЗ: ${s.rod_position_pct.toFixed(1)}%`, '#f8fafc');
-    this.drawDataTag(x, bottom + 12, `Tтопл: ${s.t_fuel_c.toFixed(0)}°C`, '#38bdf8');
+    this.drawDataTag(x, bottom + 18, `Tтопл: ${s.t_fuel_c.toFixed(0)}°C`, '#38bdf8');
 
     ctx.restore();
   }
@@ -1065,26 +1065,27 @@ class PlantMimic {
     ctx.stroke();
 
     // Шильдик 10YP01 КД-1000: размещаем слева у плеча сосуда, исключая контакт с клапаном ИПУ КД
-    this.drawComponentTag(x - 80, top + 8, '10YP01', 'КД-1000');
+    this.drawComponentTag(x - 90, top + 6, '10YP01', 'КД-1000');
 
     // Цифровая телеметрия КД в защищённой плашке справа от дыхательного трубопровода
-    const pzBadgeW = 92;
-    const pzBadgeH = 32;
-    const pzBadgeX = x + 16;
+    const pzBadgeW = 138;
+    const pzBadgeH = 46;
+    const pzBadgeX = x + 18;
     const pzBadgeY = top + h + 6;
-    ctx.fillStyle = 'rgba(10, 18, 30, 0.90)';
+    ctx.fillStyle = 'rgba(10, 18, 30, 0.92)';
     ctx.strokeStyle = '#1e3a5f';
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(pzBadgeX, pzBadgeY, pzBadgeW, pzBadgeH, 4);
+    ctx.roundRect(pzBadgeX, pzBadgeY, pzBadgeW, pzBadgeH, 5);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = 'bold 10.5px Consolas, monospace';
+    ctx.font = 'bold 15px Consolas, monospace';
     ctx.fillStyle = '#38bdf8';
     ctx.textAlign = 'center';
-    ctx.fillText(`P1: ${s.pressure_1k_mpa.toFixed(2)} МПа`, pzBadgeX + pzBadgeW / 2, pzBadgeY + 13);
-    ctx.fillText(`L: ${s.pz_level_m.toFixed(2)} м`, pzBadgeX + pzBadgeW / 2, pzBadgeY + 26);
+    ctx.fillText(`P1: ${s.pressure_1k_mpa.toFixed(2)} МПа`, pzBadgeX + pzBadgeW / 2, pzBadgeY + 18);
+    ctx.font = 'bold 14px Consolas, monospace';
+    ctx.fillText(`L: ${s.pz_level_m.toFixed(2)} м`, pzBadgeX + pzBadgeW / 2, pzBadgeY + 37);
 
     ctx.restore();
   }
@@ -1337,28 +1338,29 @@ class PlantMimic {
     ctx.fillRect(sgSteamX - 7, top - 8, 14, 9);
 
     // Табличка маркировки ПГ (смещена влево от паропровода: гарантированный зазор > 20px)
-    this.drawComponentTag(sgx - 45, top - 34, '10..40YB10', 'ПГВ-1000М (ПГ-1..4)');
+    this.drawComponentTag(sgx - 45, top - 46, '10..40YB10', 'ПГВ-1000М (ПГ-1..4)');
 
     // 8. ПАРАМЕТРЫ 2-ГО КОНТУРА (Аккуратный шильдик телеметрии с фоновой плашкой)
-    const tagW = 108;
-    const tagH = 32;
+    const tagW = 158;
+    const tagH = 46;
     const tagX = sgx - 30;
     const tagY = bottom + 8;
 
     ctx.fillStyle = '#090e15';
     ctx.strokeStyle = '#2d3b4b';
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(tagX - tagW / 2, tagY, tagW, tagH, 4);
+    ctx.roundRect(tagX - tagW / 2, tagY, tagW, tagH, 5);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = 'bold 10.5px Consolas, monospace';
+    ctx.font = 'bold 15px Consolas, monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`P2: ${s.pressure_2k_mpa.toFixed(2)} МПа`, tagX, tagY + 13);
+    ctx.fillText(`P2: ${s.pressure_2k_mpa.toFixed(2)} МПа`, tagX, tagY + 18);
+    ctx.font = 'bold 14px Consolas, monospace';
     ctx.fillStyle = '#e2e8f0';
-    ctx.fillText(`Ур: ${s.sg_level_m.toFixed(2)} м`, tagX, tagY + 26);
+    ctx.fillText(`Ур: ${s.sg_level_m.toFixed(2)} м`, tagX, tagY + 37);
 
     ctx.restore();
   }
@@ -1581,16 +1583,16 @@ class PlantMimic {
       ctx.stroke();
     }
 
-    this.drawComponentTag(x + 12, y - 48, '30MA01', 'ТУРБОУСТАНОВКА К-1000');
+    this.drawComponentTag(x + 12, y - 56, '30MA01', 'ТУРБОУСТАНОВКА К-1000');
 
     // Параметры генератора
-    ctx.font = 'bold 11px Consolas, monospace';
+    ctx.font = 'bold 15px Consolas, monospace';
     ctx.fillStyle = '#2dd4bf';
     ctx.textAlign = 'center';
     ctx.fillText(`${s.electric_power_mw.toFixed(0)} МВт`, genX, y + genH / 2 + 14);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 10px Consolas, monospace';
+    ctx.font = 'bold 14px Consolas, monospace';
     ctx.fillText(`${s.turbine_rpm.toFixed(0)} об/мин`, hpcX, y + 36);
 
     ctx.restore();
@@ -1627,10 +1629,10 @@ class PlantMimic {
     ctx.fillStyle = '#0369a1';
     ctx.fillRect(x - w / 2 + 3, y + 8, w - 6, h / 2 - 10);
 
-    this.drawComponentTag(x, y - 38, '40AA01', 'КОНДЕНСАТОР');
+    this.drawComponentTag(x, y - 46, '40AA01', 'КОНДЕНСАТОР');
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 10.5px Consolas, monospace';
+    ctx.font = 'bold 14.5px Consolas, monospace';
     ctx.textAlign = 'center';
     ctx.fillText(`Pвак: ${s.condenser_vacuum_kpa.toFixed(1)} кПа`, x, y + 20);
 
@@ -1689,16 +1691,16 @@ class PlantMimic {
 
     ctx.fillStyle = '#0a0f16';
     ctx.strokeStyle = '#2d3b4b';
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(gcnX - 52, gcnY + 21, 104, 20, 4);
+    ctx.roundRect(gcnX - 74, gcnY + 22, 148, 28, 5);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 10.5px Consolas, monospace';
+    ctx.font = 'bold 15px Consolas, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`ГЦН-195М (${s.rcp_active_count}/4)`, gcnX, gcnY + 35);
+    ctx.fillText(`ГЦН-195М (${s.rcp_active_count}/4)`, gcnX, gcnY + 41);
 
     // Питательный электронасос ПЭН
     const penX = sgx + sgw * 0.42;
@@ -1715,16 +1717,16 @@ class PlantMimic {
 
     ctx.fillStyle = '#0a0f16';
     ctx.strokeStyle = '#2d3b4b';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.roundRect(penX - 18, penY + 14, 36, 16, 3);
+    ctx.roundRect(penX - 26, penY + 14, 52, 22, 4);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#cbd5e1';
-    ctx.font = 'bold 10px Consolas, monospace';
+    ctx.font = 'bold 14px Consolas, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('ПЭН', penX, penY + 26);
+    ctx.fillText('ПЭН', penX, penY + 30);
 
     ctx.restore();
   }
@@ -1758,45 +1760,46 @@ class PlantMimic {
     const kksLen = kks ? kks.length : 0;
     const nameLen = name ? name.length : 0;
     const maxLen = Math.max(kksLen, nameLen);
-    const w = customW || Math.max(86, Math.min(150, maxLen * 7.5 + 20));
-    const h = 26;
+    const w = customW || Math.max(126, Math.min(220, maxLen * 11.0 + 28));
+    const h = 38;
     ctx.fillStyle = '#0a0f16';
     ctx.strokeStyle = '#38485c';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.8;
     ctx.beginPath();
-    ctx.roundRect(x - w / 2, y, w, h, 4);
+    ctx.roundRect(x - w / 2, y, w, h, 6);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 10px Consolas, monospace';
+    ctx.font = 'bold 14px Consolas, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(kks, x, y + 10.5);
+    ctx.fillText(kks, x, y + 15);
 
     ctx.fillStyle = '#f1f5f9';
-    ctx.font = 'bold 9.5px Consolas, monospace';
-    ctx.fillText(name, x, y + 21.5);
+    ctx.font = 'bold 13.5px Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(name, x, y + 31);
     ctx.restore();
   }
 
   drawDataTag(x, y, text, color) {
     const ctx = this.ctx;
     ctx.save();
-    const metrics = ctx.measureText ? ctx.measureText(text) : { width: 70 };
-    const bw = Math.max(86, (metrics.width || 70) + 16);
-    const bh = 20;
+    ctx.font = 'bold 15px Consolas, monospace';
+    const metrics = ctx.measureText ? ctx.measureText(text) : { width: 100 };
+    const bw = Math.max(126, (metrics.width || 100) + 24);
+    const bh = 28;
     ctx.fillStyle = '#090e15';
     ctx.strokeStyle = '#2d3b4b';
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, 3);
+    ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, 4);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = color;
-    ctx.font = 'bold 10.5px Consolas, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(text, x, y + 4);
+    ctx.fillText(text, x, y + 5.5);
     ctx.restore();
   }
 
@@ -1896,42 +1899,44 @@ class PlantMimic {
 
     if (label) {
       ctx.save();
-      ctx.font = 'bold 10px Consolas, monospace';
+      ctx.font = 'bold 14px Consolas, monospace';
       ctx.textAlign = 'center';
-      const ly = isVertical ? y - L - 6 : y - H - 16;
-      const lx = x + (isVertical ? 22 : 0);
-      const metrics = ctx.measureText ? ctx.measureText(label) : { width: 42 };
-      const tw = Math.max(36, (metrics.width || 42) + 8);
-      ctx.fillStyle = 'rgba(10, 15, 22, 0.90)';
+      const ly = isVertical ? y - L - 8 : y - H - 20;
+      const lx = x + (isVertical ? 28 : 0);
+      const metrics = ctx.measureText ? ctx.measureText(label) : { width: 56 };
+      const tw = Math.max(50, (metrics.width || 56) + 14);
+      const th = 20;
+      ctx.fillStyle = 'rgba(10, 15, 22, 0.92)';
       ctx.strokeStyle = '#2d3b4b';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.roundRect(lx - tw / 2, ly - 9, tw, 14, 3);
+      ctx.roundRect(lx - tw / 2, ly - 13, tw, th, 4);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#cbd5e1';
-      ctx.fillText(label, lx, ly + 2);
+      ctx.fillText(label, lx, ly + 2.5);
       ctx.restore();
     }
     if (valueText) {
       ctx.save();
-      ctx.font = 'bold 9.5px Consolas, monospace';
+      ctx.font = 'bold 13.5px Consolas, monospace';
       ctx.textAlign = 'center';
-      const vy = isVertical ? y + L + 14 : y + H + 14;
+      const vy = isVertical ? y + L + 18 : y + H + 18;
       const vx = x;
-      const metrics = ctx.measureText ? ctx.measureText(valueText) : { width: 34 };
-      const tw = Math.max(32, (metrics.width || 34) + 8);
-      ctx.fillStyle = 'rgba(10, 15, 22, 0.90)';
+      const metrics = ctx.measureText ? ctx.measureText(valueText) : { width: 46 };
+      const tw = Math.max(46, (metrics.width || 46) + 14);
+      const th = 20;
+      ctx.fillStyle = 'rgba(10, 15, 22, 0.92)';
       ctx.strokeStyle = '#2d3b4b';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.roundRect(vx - tw / 2, vy - 9, tw, 14, 3);
+      ctx.roundRect(vx - tw / 2, vy - 13, tw, th, 4);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#38bdf8';
-      ctx.fillText(valueText, vx, vy + 2);
+      ctx.fillText(valueText, vx, vy + 2.5);
       ctx.restore();
     }
 
