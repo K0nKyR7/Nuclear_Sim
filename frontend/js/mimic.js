@@ -1068,13 +1068,13 @@ class PlantMimic {
     // Шильдик 10YP01 КД-1000: размещаем слева у плеча сосуда, исключая контакт с клапаном ИПУ КД
     this.drawLeaderCallout(x - w / 2, top + 25, x - 100, top + 15, 120, 42, ['10YP01', 'КД-1000'], '#38bdf8');
 
-    // Телеметрия КД как аккуратная выноска справа от сосуда (выше горячей нити)
-    const pzCalloutW = 156;
-    const pzCalloutH = 50;
-    const pzCalloutX = x + 115;
-    const pzCalloutY = top + h - 28;
+    // Телеметрия КД: выноска в свободную верхнюю зону справа от КД (не пересекается с ПГ)
+    const pzCalloutW = 152;
+    const pzCalloutH = 48;
+    const pzCalloutX = x + 78;
+    const pzCalloutY = top + 22;
     this.drawLeaderCallout(
-      x + w / 2, top + h * 0.70,
+      x + w / 2, top + 35,
       pzCalloutX, pzCalloutY,
       pzCalloutW, pzCalloutH,
       [`P1: ${s.pressure_1k_mpa.toFixed(2)} МПа`, `L: ${s.pz_level_m.toFixed(2)} м`],
@@ -1326,13 +1326,19 @@ class PlantMimic {
       ctx.fillRect(sx, top + 10, 8, 4);
     }
 
-    // Пароотводящий патрубок свежего пара (смещен вправо от таблички)
-    const sgSteamX = sgx + 35;
+    // Пароотводящий патрубок свежего пара (смещен вправо к холодному коллектору)
+    const sgSteamX = sgx + 58;
     ctx.fillStyle = '#64748b';
     ctx.fillRect(sgSteamX - 7, top - 8, 14, 9);
 
-    // Табличка маркировки ПГ (смещена влево от паропровода: гарантированный зазор > 20px)
-    this.drawComponentTag(sgx - 45, top - 54, '10..40YB10', 'ПГВ-1000М (ПГ-1..4)');
+    // Табличка маркировки ПГ: чистая ГОСТ-выноска над куполом сосуда (без наложений)
+    this.drawLeaderCallout(
+      sgx - 20, top,
+      sgx - 30, top - 40,
+      176, 42,
+      ['10..40YB10', 'ПГВ-1000М (ПГ-1..4)'],
+      '#38bdf8'
+    );
 
     // 8. ПАРАМЕТРЫ 2-ГО КОНТУРА (Выноска параметров ПГ с чётким зазором от питлинии)
     const sgCalloutW = 168;
@@ -1357,8 +1363,8 @@ class PlantMimic {
     const ctx = this.ctx;
     ctx.save();
 
-    const steamY = turby - 12;
-    const sgSteamX = sgx + 35;
+    const steamY = turby - 24;
+    const sgSteamX = sgx + 58;
     const topSG = sgy - sgh / 2;
 
     // 1. Паропровод свежего пара (ПГВ-1000М -> Стопорный клапан турбины)
@@ -1570,16 +1576,16 @@ class PlantMimic {
 
     this.drawComponentTag(x + 12, y - 64, '30MA01', 'ТУРБОУСТАНОВКА К-1000');
 
-    // Параметры генератора
+    // Параметры генератора (свободные отступы от статора и выхлопных патрубков)
     ctx.font = 'bold 17px Consolas, monospace';
     ctx.fillStyle = '#2dd4bf';
     ctx.textAlign = 'center';
-    ctx.fillText(`${s.electric_power_mw.toFixed(0)} МВт`, genX, y + genH / 2 + 14);
+    ctx.fillText(`${s.electric_power_mw.toFixed(0)} МВт`, genX, y + genH / 2 + 18);
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'bold 15px Consolas, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${s.turbine_rpm.toFixed(0)} об/мин`, hpcX - 16, y + 42);
+    ctx.fillText(`${s.turbine_rpm.toFixed(0)} об/мин`, hpcX - 18, y + 50);
 
     ctx.restore();
   }
@@ -1617,11 +1623,11 @@ class PlantMimic {
 
     this.drawComponentTag(x, y - 56, '40AA01', 'КОНДЕНСАТОР');
 
-    // Выноска вакуума под конденсатором (без пересечения с линией питводы)
+    // Выноска вакуума справа от конденсатора (полная изоляция от трубопроводов)
     this.drawLeaderCallout(
-      x, y + h / 2,
-      x, y + h / 2 + 32,
-      170, 32,
+      x + w / 2, y,
+      x + w / 2 + 90, y,
+      160, 34,
       [`Pвак: ${s.condenser_vacuum_kpa.toFixed(1)} кПа`],
       '#38bdf8'
     );
@@ -1946,44 +1952,45 @@ class PlantMimic {
 
     if (label) {
       ctx.save();
-      ctx.font = 'bold 16px Consolas, monospace';
+      ctx.font = 'bold 15px Consolas, monospace';
       ctx.textAlign = 'center';
-      const ly = isVertical ? y - L - 10 : y - H - 24;
-      const lx = x + (isVertical ? (flipLabelRight ? 42 : 32) : 0);
-      const metrics = ctx.measureText ? ctx.measureText(label) : { width: 62 };
-      const tw = Math.max(58, (metrics.width || 62) + 16);
-      const th = 24;
+      const ly = isVertical ? y - 10 : y - H - 22;
+      const lx = isVertical ? (flipLabelRight ? x - 42 : x + 42) : x;
+      const metrics = ctx.measureText ? ctx.measureText(label) : { width: 60 };
+      const tw = Math.max(54, (metrics.width || 60) + 14);
+      const th = 22;
       ctx.fillStyle = 'rgba(10, 15, 22, 0.94)';
       ctx.strokeStyle = '#2d3b4b';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.roundRect(lx - tw / 2, ly - 16, tw, th, 4);
+      ctx.roundRect(lx - tw / 2, ly - 15, tw, th, 4);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#cbd5e1';
-      ctx.fillText(label, lx, ly + 2);
+      ctx.fillText(label, lx, ly + 1);
       ctx.restore();
     }
     if (valueText) {
       ctx.save();
-      ctx.font = 'bold 15px Consolas, monospace';
+      ctx.font = 'bold 14px Consolas, monospace';
       ctx.textAlign = 'center';
-      const vy = isVertical ? y + L + 22 : y + H + 22;
-      const vx = x;
-      const metrics = ctx.measureText ? ctx.measureText(valueText) : { width: 50 };
-      const tw = Math.max(52, (metrics.width || 50) + 16);
-      const th = 24;
+      // Для вертикальных трубопроводов выносим значение вбок, чтобы не пересекать горизонтальные магистрали
+      const vy = isVertical ? y + 14 : y + H + 22;
+      const vx = isVertical ? (flipLabelRight ? x - 42 : x + 42) : x;
+      const metrics = ctx.measureText ? ctx.measureText(valueText) : { width: 48 };
+      const tw = Math.max(48, (metrics.width || 48) + 14);
+      const th = 22;
       ctx.fillStyle = 'rgba(10, 15, 22, 0.94)';
       ctx.strokeStyle = '#2d3b4b';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.roundRect(vx - tw / 2, vy - 16, tw, th, 4);
+      ctx.roundRect(vx - tw / 2, vy - 15, tw, th, 4);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#38bdf8';
-      ctx.fillText(valueText, vx, vy + 2);
+      ctx.fillText(valueText, vx, vy + 1);
       ctx.restore();
     }
 
@@ -2001,7 +2008,7 @@ class PlantMimic {
     // Расположены слева от корпуса реактора
     const tankW = 22;
     const tankH = Math.max(34, Math.min(48, rh * 0.13));
-    const tankX = Math.max(24, rx - rw * 0.5 - 34);
+    const tankX = Math.max(26, rx - rw * 0.5 - 62);
     const tankGap = (rh * 0.72) / 3.0;
 
     for (let i = 0; i < 4; i++) {
@@ -2051,7 +2058,47 @@ class PlantMimic {
       // Обратный клапан САОЗ по ГОСТ
       const vX = (tankX + tankW / 2 + rx - rw * 0.5) / 2;
       const vY = (tankY + connY) / 2;
-      this.drawGostValve(vX, vY, 'check', isInjecting ? 'open' : 'closed', `САОЗ-${i + 1}`, null, false, false);
+      
+      // Рисуем ГОСТ-символ обратного клапана и компактную плашку маркировки
+      ctx.save();
+      const chColor = isInjecting ? '#38bdf8' : '#64748b';
+      const chFill = isInjecting ? '#0369a1' : '#1e293b';
+      ctx.fillStyle = chFill;
+      ctx.strokeStyle = chColor;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(vX - 8, vY - 6);
+      ctx.lineTo(vX - 8, vY + 6);
+      ctx.lineTo(vX, vY);
+      ctx.closePath();
+      ctx.moveTo(vX, vY);
+      ctx.lineTo(vX + 8, vY - 6);
+      ctx.lineTo(vX + 8, vY + 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(vX, vY, 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = chColor;
+      ctx.fill();
+
+      // Четкая компактная плашка САОЗ-1..4 (гарантированно помещается в пролете)
+      const tagLbl = `САОЗ-${i + 1}`;
+      ctx.font = 'bold 12px Consolas, monospace';
+      const tW = 46;
+      const tH = 18;
+      const tY = (i < 2) ? vY - 14 : vY + 14;
+      ctx.fillStyle = 'rgba(10, 15, 22, 0.94)';
+      ctx.strokeStyle = '#2d3b4b';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(vX - tW / 2, tY - tH / 2, tW, tH, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#cbd5e1';
+      ctx.textAlign = 'center';
+      ctx.fillText(tagLbl, vX, tY + 4);
+      ctx.restore();
 
       // Маркировка емкости
       ctx.fillStyle = '#94a3b8';
@@ -2079,11 +2126,11 @@ class PlantMimic {
     }
 
     // 2. АРМАТУРА ГОСТ 2-ГО КОНТУРА: БРУ-К И БРУ-А
-    const steamY = turby - 12;
-    const sgSteamX = sgx + 35;
+    const steamY = turby - 24;
+    const sgSteamX = sgx + 58;
 
     // 2.1 БРУ-К (Сброс пара в конденсатор)
-    const bruKX = sgSteamX + (turbx - 52 - sgSteamX) * 0.45;
+    const bruKX = sgSteamX + (turbx - 52 - sgSteamX) * 0.48;
     const bruKY = (steamY + condy - 20) / 2;
 
     // Труба сброса в конденсатор
@@ -2095,11 +2142,11 @@ class PlantMimic {
     ctx.lineTo(condx - 20, condy - 20);
     ctx.stroke();
 
-    this.drawGostValve(bruKX, bruKY, 'control', s.bru_k_pct > 0 ? 'open' : 'closed', 'БРУ-К', `${s.bru_k_pct.toFixed(0)}%`, true);
+    this.drawGostValve(bruKX, bruKY, 'control', s.bru_k_pct > 0 ? 'open' : 'closed', 'БРУ-К', `${s.bru_k_pct.toFixed(0)}%`, true, false);
 
     // 2.2 БРУ-А (Сброс пара в атмосферу)
-    const bruAX = sgSteamX + (turbx - 52 - sgSteamX) * 0.18;
-    const bruAY = steamY - 26;
+    const bruAX = sgSteamX + (turbx - 52 - sgSteamX) * 0.20;
+    const bruAY = steamY - 44;
 
     // Труба сброса в атмосферу с диффузором
     ctx.strokeStyle = s.bru_a_pct > 0 ? '#f8fafc' : '#334155';
@@ -2119,7 +2166,7 @@ class PlantMimic {
     ctx.closePath();
     ctx.fill();
 
-    this.drawGostValve(bruAX, bruAY, 'control', s.bru_a_pct > 0 ? 'open' : 'closed', 'БРУ-А', `${s.bru_a_pct.toFixed(0)}%`, true);
+    this.drawGostValve(bruAX, bruAY, 'control', s.bru_a_pct > 0 ? 'open' : 'closed', 'БРУ-А', `${s.bru_a_pct.toFixed(0)}%`, true, false);
 
     if (s.bru_a_pct > 0) {
       // Клубы пара в атмосферу
@@ -2133,8 +2180,8 @@ class PlantMimic {
 
     // 2.3 ИПУ КД (Импульсно-предохранительные устройства компенсатора давления)
     const ipuX = pzx;
-    const ipuY = pzy - 65 - 28;
-    this.drawGostValve(ipuX, ipuY, 'safety', 'closed', 'ИПУ КД', '17.5 МПа');
+    const ipuY = pzy - 65 - 20;
+    this.drawGostValve(ipuX, ipuY, 'safety', 'closed', 'ИПУ КД', '17.5 МПа', true, true);
 
     // 2.4 Обратный клапан на линии питательной воды
     const feedY = condy + 12;
@@ -2149,18 +2196,15 @@ class PlantMimic {
     const gap = 8;
     const totalLoopsW = 4 * loopW + 3 * gap;
 
-    // Центрируем карточки в пролете между реактором и парогенератором с защитой от наложений
-    const maxBarRight = Math.min(bruAX - 14, turbx - 52 - 14);
-    const minBarLeft = rx - rw * 0.5 + 10;
-    const centerLoopsX = (rx + sgSteamX) / 2;
-    let barX = Math.round(centerLoopsX - totalLoopsW / 2);
-    if (barX + totalLoopsW > maxBarRight) {
-      barX = maxBarRight - totalLoopsW;
+    // Центрируем карточки в верхней зоне с гарантированным зазором от ИПУ КД
+    const barY = 8;
+    let barX = Math.round(rx + rw * 0.5 - 30);
+    if (barX + totalLoopsW > bruAX - 20) {
+      barX = bruAX - 20 - totalLoopsW;
     }
-    if (barX < minBarLeft) {
-      barX = minBarLeft;
+    if (barX < 20) {
+      barX = 20;
     }
-    const barY = 14;
 
     for (let i = 0; i < 4; i++) {
       const lx = barX + i * (loopW + gap);
@@ -2841,7 +2885,7 @@ class PlantMimic {
     }
 
     // Клик по турбине или ГПЗ переключает стопорный клапан турбины
-    if (Math.hypot(sx - turbx, sy - turby) < 38 || Math.hypot(sx - gpzX, sy - turby + 12) < 22) {
+    if (Math.hypot(sx - turbx, sy - turby) < 38 || Math.hypot(sx - gpzX, sy - (turby - 24)) < 24) {
       if (window.scadaApp) {
         if (window.plantAudio) window.plantAudio.playSwitchClick();
         const isOpen = (this.state && typeof this.state.turbine_rpm === 'number') ? this.state.turbine_rpm > 100 : true;
@@ -2916,7 +2960,7 @@ class PlantMimic {
       const gpzX = (sgx + 10 + turbx - 52) / 2;
       if (Math.hypot(sx - gcnX, sy - gcnY) < 28 ||
           Math.hypot(sx - turbx, sy - turby) < 38 ||
-          Math.hypot(sx - gpzX, sy - turby + 12) < 22) {
+          Math.hypot(sx - gpzX, sy - (turby - 24)) < 24) {
         isHovering = true;
       }
     }
