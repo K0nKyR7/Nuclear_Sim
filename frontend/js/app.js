@@ -91,10 +91,15 @@ class ScadaApp {
     // Звуковая реакция на изменение состояния энергоблока
     try {
       if (window.plantAudio) {
+        const isEmergency = ['SCRAMMED', 'ACCIDENT', 'EXPLOSION', 'MELTDOWN'].includes(data.state) || Boolean(data.nuclear_detonation || data.explosion_type === 'nuclear');
+        const prevEmergency = ['SCRAMMED', 'ACCIDENT', 'EXPLOSION', 'MELTDOWN'].includes(this.previousState) || Boolean(this.previousNuclearDetonation);
+
         if (data.state === 'SCRAMMED' && this.previousState !== 'SCRAMMED') {
           window.plantAudio.playAz5Slam();
           window.plantAudio.startSiren();
-        } else if (data.state !== 'SCRAMMED' && this.previousState === 'SCRAMMED') {
+        } else if (isEmergency && !prevEmergency) {
+          window.plantAudio.startSiren();
+        } else if (!isEmergency && prevEmergency) {
           window.plantAudio.stopSiren();
         }
 

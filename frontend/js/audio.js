@@ -2,6 +2,8 @@
  * Высокоточный аудио-движок SCADA энергоблока АЭС на базе Web Audio API.
  * Реалистичный процедурный синтез звуков промышленного оборудования,
  * тяжелых механических переключателей, релейных шкафов и сигнализаций БЩУ.
+ * Включает точную акустическую модель гражданской обороны/АЭС сирены С-40,
+ * электромеханического ревуна РВФ, счетчика Гейгера и детонации активной зоны.
  */
 class PlantAudioEngine {
   constructor() {
@@ -16,6 +18,11 @@ class PlantAudioEngine {
     this.turbineWhine = null;
     this.alarmTimeout = null;
     this.isSirenPlaying = false;
+    this.sirenNodes = null;
+    this.sirenCycleTimer = null;
+    this.sirenCoastTimer = null;
+    this.rvfAlarmTimer = null;
+    this.geigerScreamNode = null;
     this.steamNoiseNode = null;
     this.steamGainNode = null;
     this.radiationLevel = 12.0;
@@ -62,7 +69,7 @@ class PlantAudioEngine {
 
       // Канал аварийных сигналов
       this.alarmGain = this.ctx.createGain();
-      this.alarmGain.gain.setValueAtTime(0.55, this.ctx.currentTime);
+      this.alarmGain.gain.setValueAtTime(0.58, this.ctx.currentTime);
       this.alarmGain.connect(this.masterGain);
 
       this.startAmbientHum();
@@ -150,7 +157,6 @@ class PlantAudioEngine {
     }
   }
 
-
   /**
    * Щелчки радиометра / дозиметрического контроля
    */
@@ -158,15 +164,20 @@ class PlantAudioEngine {
     const loop = () => {
       if (this.ctx && !this.isMuted) {
         const rad = Math.max(12.0, this.radiationLevel || 12.0);
-        // При росте радиации шанс щелчка растет, а интервал падает
-        const prob = Math.min(0.95, 0.25 + Math.log10(rad / 10.0) * 0.22);
-        if (Math.random() < prob) {
-          this.playGeigerClick();
+        if (rad < 10000) {
+          const prob = Math.min(0.98, 0.25 + Math.log10(rad / 10.0) * 0.22);
+          if (Math.random() < prob) {
+            this.playGeigerClick();
+          }
         }
       }
       const rad = Math.max(12.0, this.radiationLevel || 12.0);
-      const minDelay = Math.max(25, 450 - Math.min(420, Math.log10(rad / 10.0) * 110));
-      const jitter = Math.max(20, 800 - Math.min(760, Math.log10(rad / 10.0) * 200));
+      let minDelay = Math.max(15, 450 - Math.min(430, Math.log10(rad / 10.0) * 120));
+      let jitter = Math.max(10, 800 - Math.min(780, Math.log10(rad / 10.0) * 220));
+      if (rad > 3000) {
+        minDelay = 12;
+        jitter = 18;
+      }
       setTimeout(loop, minDelay + Math.random() * jitter);
     };
     loop();
@@ -174,6 +185,68 @@ class PlantAudioEngine {
 
   setRadiationLevel(mr_h) {
     this.radiationLevel = Number(mr_h) || 12.0;
+    this.updateRadiationScream();
+  }
+
+  updateRadiationScream() {
+    if (!this.ctx || this.isMuted) return;
+    const rad = this.radiationLevel || 12.0;
+
+    // При радиации свыше 10 000 мР/ч счетчик переходит в лавинный разряд (непрерывный визг)
+    if (rad > 10000) {
+      if (!this.geigerScreamNode) {
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(1600, this.ctx.currentTime);
+
+          // Модуляция лавинного разряда
+          const mod = this.ctx.createOscillator();
+          mod.type = 'square';
+          mod.frequency.setValueAtTime(92, this.ctx.currentTime);
+          const modGain = this.ctx.createGain();
+          modGain.gain.setValueAtTime(700, this.ctx.currentTime);
+          mod.connect(modGain);
+          modGain.connect(osc.frequency);
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(2400, this.ctx.currentTime);
+          filter.Q.setValueAtTime(3.8, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.36, this.ctx.currentTime + 0.4);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.masterGain || this.ctx.destination);
+
+          mod.start();
+          osc.start();
+
+          this.geigerScreamNode = { osc, mod, gain };
+        } catch (e) {}
+      }
+    } else {
+      if (this.geigerScreamNode) {
+        try {
+          const now = this.ctx.currentTime;
+          this.geigerScreamNode.gain.gain.linearRampToValueAtTime(0.0001, now + 0.35);
+          setTimeout(() => {
+            if (this.geigerScreamNode) {
+              try {
+                this.geigerScreamNode.osc.stop();
+                this.geigerScreamNode.mod.stop();
+              } catch (e) {}
+              this.geigerScreamNode = null;
+            }
+          }, 400);
+        } catch (e) {
+          this.geigerScreamNode = null;
+        }
+      }
+    }
   }
 
   playGeigerClick() {
@@ -182,17 +255,18 @@ class PlantAudioEngine {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'square';
-      osc.frequency.setValueAtTime(1800 + Math.random() * 600, this.ctx.currentTime);
+      osc.frequency.setValueAtTime(2100 + Math.random() * 800, this.ctx.currentTime);
 
       const targetGain = this.masterGain || this.ctx.destination;
-      gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.008);
+      const vol = 0.05 + Math.random() * 0.035;
+      gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.006);
 
       osc.connect(gain);
       gain.connect(targetGain);
 
       osc.start();
-      osc.stop(this.ctx.currentTime + 0.008);
+      osc.stop(this.ctx.currentTime + 0.007);
     } catch (e) {}
   }
 
@@ -253,7 +327,6 @@ class PlantAudioEngine {
     } catch (e) {}
   }
 
-
   /**
    * Тяжелый механический щелчок поворотного переключателя ПМО (ГЦН)
    */
@@ -262,7 +335,6 @@ class PlantAudioEngine {
     if (!this.ctx || this.isMuted) return;
     try {
       const t = this.ctx.currentTime;
-      // Двойной механический контакт: кулачок + возвратная пружина
       const osc1 = this.ctx.createOscillator();
       const gain1 = this.ctx.createGain();
       osc1.type = 'square';
@@ -421,54 +493,240 @@ class PlantAudioEngine {
   }
 
   /**
-   * Аварийная двухтональная сирена БЩУ
+   * Аутентичная электромеханическая сирена ГО / АЭС (С-40 / С-28)
+   * Двухчастотный ротор (порты 10 и 12), аэродинамический шум крыльчатки,
+   * акустический резонанс корпуса и электромеханический ревун БЩУ (РВФ-24).
    */
   startSiren() {
     this.ensureReady();
     if (this.isSirenPlaying) return;
     this.isSirenPlaying = true;
 
-    const beep = () => {
+    if (this.sirenCoastTimer) {
+      clearTimeout(this.sirenCoastTimer);
+      this.sirenCoastTimer = null;
+    }
+
+    try {
+      const now = this.ctx.currentTime;
+      const dest = this.alarmGain || this.masterGain || this.ctx.destination;
+
+      // Создаем аудио-узел сирены С-40
+      const sirenGain = this.ctx.createGain();
+      sirenGain.gain.setValueAtTime(0.001, now);
+      sirenGain.gain.linearRampToValueAtTime(0.55, now + 1.2);
+
+      // Двухчастотный ротор С-40 (порты 10 и 12)
+      // Основной тон 10 окон: 280 -> 480 Гц
+      const osc10 = this.ctx.createOscillator();
+      osc10.type = 'sawtooth';
+      osc10.frequency.setValueAtTime(280, now);
+
+      // Основной тон 12 окон (малая терция, интервал 1.2): 336 -> 576 Гц
+      const osc12 = this.ctx.createOscillator();
+      osc12.type = 'sawtooth';
+      osc12.frequency.setValueAtTime(336, now);
+
+      // Обертон (2-я гармоника) для металлического звона статора
+      const oscHarmonic = this.ctx.createOscillator();
+      oscHarmonic.type = 'triangle';
+      oscHarmonic.frequency.setValueAtTime(560, now);
+
+      // Аэродинамический шум прерывания воздуха крыльчаткой (air whoosh)
+      const bufferSize = this.ctx.sampleRate * 2.0;
+      const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noiseSource = this.ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+      noiseSource.loop = true;
+
+      const noiseFilter = this.ctx.createBiquadFilter();
+      noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.setValueAtTime(420, now);
+      noiseFilter.Q.setValueAtTime(3.0, now);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.18, now);
+
+      noiseSource.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(sirenGain);
+
+      // Формантный фильтр корпуса и раструба сирены
+      const bodyFilter = this.ctx.createBiquadFilter();
+      bodyFilter.type = 'lowpass';
+      bodyFilter.frequency.setValueAtTime(1400, now);
+      bodyFilter.Q.setValueAtTime(2.2, now);
+
+      osc10.connect(bodyFilter);
+      osc12.connect(bodyFilter);
+      oscHarmonic.connect(bodyFilter);
+      bodyFilter.connect(sirenGain);
+
+      // Акустическая задержка (эхо бетонных стен машзала и реакторного отделения)
+      const echoDelay = this.ctx.createDelay();
+      echoDelay.delayTime.setValueAtTime(0.09, now);
+      const echoGain = this.ctx.createGain();
+      echoGain.gain.setValueAtTime(0.22, now);
+
+      sirenGain.connect(dest);
+      sirenGain.connect(echoDelay);
+      echoDelay.connect(echoGain);
+      echoGain.connect(dest);
+
+      osc10.start(now);
+      osc12.start(now);
+      oscHarmonic.start(now);
+      noiseSource.start(now);
+
+      this.sirenNodes = {
+        gain: sirenGain,
+        osc10,
+        osc12,
+        oscHarmonic,
+        noiseFilter,
+        noiseSource,
+        echoGain
+      };
+
+      // Циклический регулятор оборотов электромотора (период завывания 4.2 секунды)
+      const cycleWail = () => {
+        if (!this.isSirenPlaying || !this.ctx || !this.sirenNodes) return;
+        const t = this.ctx.currentTime;
+        const cycleTime = 4.2;
+        const spinUp = 2.3;
+
+        // Разгон мотора
+        osc10.frequency.cancelScheduledValues(t);
+        osc12.frequency.cancelScheduledValues(t);
+        oscHarmonic.frequency.cancelScheduledValues(t);
+        noiseFilter.frequency.cancelScheduledValues(t);
+
+        osc10.frequency.setValueAtTime(osc10.frequency.value, t);
+        osc10.frequency.linearRampToValueAtTime(485, t + spinUp);
+        osc10.frequency.linearRampToValueAtTime(270, t + cycleTime);
+
+        osc12.frequency.setValueAtTime(osc12.frequency.value, t);
+        osc12.frequency.linearRampToValueAtTime(582, t + spinUp);
+        osc12.frequency.linearRampToValueAtTime(324, t + cycleTime);
+
+        oscHarmonic.frequency.setValueAtTime(oscHarmonic.frequency.value, t);
+        oscHarmonic.frequency.linearRampToValueAtTime(970, t + spinUp);
+        oscHarmonic.frequency.linearRampToValueAtTime(540, t + cycleTime);
+
+        noiseFilter.frequency.setValueAtTime(noiseFilter.frequency.value, t);
+        noiseFilter.frequency.linearRampToValueAtTime(540, t + spinUp);
+        noiseFilter.frequency.linearRampToValueAtTime(320, t + cycleTime);
+
+        this.sirenCycleTimer = setTimeout(cycleWail, (cycleTime - 0.1) * 1000);
+      };
+
+      cycleWail();
+
+      // Запуск электромеханического ревуна БЩУ (РВФ-24)
+      this.startRvfBuzzer();
+    } catch (e) {
+      console.warn('[SCADA Audio] Ошибка запуска сирены:', e);
+    }
+  }
+
+  /**
+   * Электромеханический ревун щита управления БЩУ (РВФ-24 / ЭР-1)
+   * 100 Гц пульсация двухполупериодного выпрямления с резонансом мембраны
+   */
+  startRvfBuzzer() {
+    if (this.rvfAlarmTimer) return;
+    const pulse = () => {
       if (!this.isSirenPlaying || !this.ctx || this.isMuted) return;
       try {
+        const t = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, t); // 100 Гц промышленная гармоника
 
-        const t = this.ctx.currentTime;
-        osc.frequency.setValueAtTime(680, t);
-        osc.frequency.linearRampToValueAtTime(940, t + 0.35);
-        osc.frequency.linearRampToValueAtTime(620, t + 0.7);
-
+        // Резонансный фильтр акустического раструба
         const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1600, t);
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(820, t);
+        filter.Q.setValueAtTime(5.5, t);
 
         const dest = this.alarmGain || this.masterGain || this.ctx.destination;
-        gain.gain.setValueAtTime(0.45, t);
-        gain.gain.linearRampToValueAtTime(0.45, t + 0.7);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.88);
+        gain.gain.setValueAtTime(0.32, t);
+        gain.gain.setValueAtTime(0.32, t + 0.65);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.72);
 
         osc.connect(filter);
         filter.connect(gain);
         gain.connect(dest);
 
         osc.start(t);
-        osc.stop(t + 0.88);
+        osc.stop(t + 0.72);
       } catch (e) {}
 
       if (this.isSirenPlaying) {
-        this.alarmTimeout = setTimeout(beep, 1050);
+        this.rvfAlarmTimer = setTimeout(pulse, 1100);
       }
     };
-    beep();
+    pulse();
   }
 
+  stopRvfBuzzer() {
+    if (this.rvfAlarmTimer) {
+      clearTimeout(this.rvfAlarmTimer);
+      this.rvfAlarmTimer = null;
+    }
+  }
+
+  /**
+   * Остановка сирены с реалистичным механическим выбегом ротора (3.2 сек)
+   */
   stopSiren() {
+    if (!this.isSirenPlaying) return;
     this.isSirenPlaying = false;
-    if (this.alarmTimeout) {
-      clearTimeout(this.alarmTimeout);
-      this.alarmTimeout = null;
+
+    if (this.sirenCycleTimer) {
+      clearTimeout(this.sirenCycleTimer);
+      this.sirenCycleTimer = null;
+    }
+    this.stopRvfBuzzer();
+
+    // Реалистичный выбег ротора по инерции (coast-down 3.2 сек)
+    if (this.sirenNodes && this.ctx) {
+      try {
+        const now = this.ctx.currentTime;
+        const nodes = this.sirenNodes;
+        this.sirenNodes = null;
+
+        nodes.osc10.frequency.cancelScheduledValues(now);
+        nodes.osc12.frequency.cancelScheduledValues(now);
+        nodes.oscHarmonic.frequency.cancelScheduledValues(now);
+        nodes.gain.gain.cancelScheduledValues(now);
+
+        nodes.osc10.frequency.setValueAtTime(nodes.osc10.frequency.value, now);
+        nodes.osc10.frequency.exponentialRampToValueAtTime(35, now + 3.2);
+
+        nodes.osc12.frequency.setValueAtTime(nodes.osc12.frequency.value, now);
+        nodes.osc12.frequency.exponentialRampToValueAtTime(42, now + 3.2);
+
+        nodes.gain.gain.setValueAtTime(nodes.gain.gain.value, now);
+        nodes.gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.2);
+
+        this.sirenCoastTimer = setTimeout(() => {
+          try {
+            nodes.osc10.stop();
+            nodes.osc12.stop();
+            nodes.oscHarmonic.stop();
+            nodes.noiseSource.stop();
+            nodes.gain.disconnect();
+          } catch (e) {}
+        }, 3300);
+      } catch (e) {
+        this.sirenNodes = null;
+      }
     }
   }
 
@@ -572,10 +830,13 @@ class PlantAudioEngine {
   }
 
   /**
-   * Мощный процедурный звук взрыва / гидроудара / разрушения контура
-   */
-  /**
-   * Разрушительный процедурный звук сверхкритического ядерного взрыва реактора
+   * Разрушительный процедурный звук сверхкритического ядерного взрыва реактора:
+   * 1. Предвспышечный ионизационный щелчок Черенкова и мгновенный скачок давления (<80мс)
+   * 2. Оглушительный гиперзвуковой удар ударной волны с аналоговым клиппированием
+   * 3. Колоссальный сейсмический инфразвуковой гул (140 -> 18 Гц) с субгармониками
+   * 4. Акустический рев 250 тонн вскипающего сверхкритического теплоносителя и плазменного огненного шара
+   * 5. Скрежет 200-тонной крышки реактора, разрушение железобетонной биозащиты и падение обломков
+   * 6. Зашкаливание и непрерывный лавинный визг счетчиков Гейгера
    */
   playNuclearDetonation() {
     this.ensureReady();
@@ -585,89 +846,148 @@ class PlantAudioEngine {
       const now = this.ctx.currentTime;
       const targetGain = this.masterGain || this.ctx.destination;
 
-      // 1. Оглушительный гиперзвуковой щелчок ударного фронта волны детонации
+      // 1. Ионизационный щелчок черенковского спектра (0 - 80 мс)
+      const ionOsc = this.ctx.createOscillator();
+      const ionGain = this.ctx.createGain();
+      ionOsc.type = 'sawtooth';
+      ionOsc.frequency.setValueAtTime(2400, now);
+      ionOsc.frequency.exponentialRampToValueAtTime(160, now + 0.08);
+
+      ionGain.gain.setValueAtTime(0.9, now);
+      ionGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+      ionOsc.connect(ionGain);
+      ionGain.connect(targetGain);
+      ionOsc.start(now);
+      ionOsc.stop(now + 0.1);
+
+      // 2. Гиперзвуковой ударный фронт (Concussive Shockwave Snap)
       const snapOsc = this.ctx.createOscillator();
       const snapGain = this.ctx.createGain();
-      snapOsc.type = 'sawtooth';
-      snapOsc.frequency.setValueAtTime(1400, now);
-      snapOsc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+      snapOsc.type = 'triangle';
+      snapOsc.frequency.setValueAtTime(1100, now + 0.02);
+      snapOsc.frequency.exponentialRampToValueAtTime(55, now + 0.28);
 
-      snapGain.gain.setValueAtTime(1.0, now);
-      snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      snapGain.gain.setValueAtTime(1.0, now + 0.02);
+      snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
 
       snapOsc.connect(snapGain);
       snapGain.connect(targetGain);
-      snapOsc.start(now);
-      snapOsc.stop(now + 0.16);
+      snapOsc.start(now + 0.02);
+      snapOsc.stop(now + 0.36);
 
-      // 2. Сверхмощный инфразвуковой сейсмический басовый удар (дроп 140 -> 18 Гц)
+      // 3. Сверхмощный инфразвуковой сейсмический басовый удар (дроп 140 -> 18 Гц, 5.2 сек)
       const subOsc = this.ctx.createOscillator();
       const subGain = this.ctx.createGain();
       subOsc.type = 'sine';
       subOsc.frequency.setValueAtTime(140, now);
-      subOsc.frequency.exponentialRampToValueAtTime(18, now + 3.8);
+      subOsc.frequency.exponentialRampToValueAtTime(18, now + 4.8);
 
       subGain.gain.setValueAtTime(1.0, now);
-      subGain.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 5.2);
+
+      // Субгармоника 22 Гц для физической тряски сабвуфера
+      const subOsc2 = this.ctx.createOscillator();
+      const subGain2 = this.ctx.createGain();
+      subOsc2.type = 'sawtooth';
+      subOsc2.frequency.setValueAtTime(55, now + 0.05);
+      subOsc2.frequency.exponentialRampToValueAtTime(22, now + 4.0);
+
+      const subFilter = this.ctx.createBiquadFilter();
+      subFilter.type = 'lowpass';
+      subFilter.frequency.setValueAtTime(80, now);
+
+      subGain2.gain.setValueAtTime(0.65, now + 0.05);
+      subGain2.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
 
       subOsc.connect(subGain);
       subGain.connect(targetGain);
       subOsc.start(now);
-      subOsc.stop(now + 4.6);
+      subOsc.stop(now + 5.3);
 
-      // 3. Раскатистый грохот ядерного огненного шара и разрушения реакторного зала
-      const bufferSize = this.ctx.sampleRate * 4.5;
+      subOsc2.connect(subFilter);
+      subFilter.connect(subGain2);
+      subGain2.connect(targetGain);
+      subOsc2.start(now + 0.05);
+      subOsc2.stop(now + 4.6);
+
+      // 4. Колоссальный рев огненного шара и вскипания теплоносителя (шумовой массив 5.5 сек)
+      const bufferSize = this.ctx.sampleRate * 5.5;
       const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0;
       for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1;
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99 * b0 + white * 0.08;
+        b1 = 0.95 * b1 + white * 0.15;
+        b2 = 0.85 * b2 + white * 0.25;
+        output[i] = (b0 + b1 + b2) * 0.45;
       }
 
-      const whiteNoise = this.ctx.createBufferSource();
-      whiteNoise.buffer = noiseBuffer;
+      const roarSource = this.ctx.createBufferSource();
+      roarSource.buffer = noiseBuffer;
 
       const lowpass = this.ctx.createBiquadFilter();
       lowpass.type = 'lowpass';
-      lowpass.frequency.setValueAtTime(1200, now);
-      lowpass.frequency.exponentialRampToValueAtTime(45, now + 4.2);
-      lowpass.Q.setValueAtTime(4.0, now);
+      lowpass.frequency.setValueAtTime(1400, now);
+      lowpass.frequency.exponentialRampToValueAtTime(45, now + 5.2);
+      lowpass.Q.setValueAtTime(3.8, now);
 
-      const noiseGain = this.ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.95, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 4.4);
+      const roarGain = this.ctx.createGain();
+      roarGain.gain.setValueAtTime(0.98, now);
+      roarGain.gain.exponentialRampToValueAtTime(0.001, now + 5.4);
 
-      whiteNoise.connect(lowpass);
-      lowpass.connect(noiseGain);
-      noiseGain.connect(targetGain);
+      roarSource.connect(lowpass);
+      lowpass.connect(roarGain);
+      roarGain.connect(targetGain);
+      roarSource.start(now);
+      roarSource.stop(now + 5.5);
 
-      whiteNoise.start(now);
-      whiteNoise.stop(now + 4.5);
-
-      // 4. Скрежет 200-тонной крышки и разрываемого металла корпуса реактора
+      // 5. Металлический скрежет срыва 200-тонной крышки и удар обломков
       const metalOsc = this.ctx.createOscillator();
       const metalGain = this.ctx.createGain();
       metalOsc.type = 'sawtooth';
-      metalOsc.frequency.setValueAtTime(480, now + 0.05);
-      metalOsc.frequency.exponentialRampToValueAtTime(60, now + 0.9);
+      metalOsc.frequency.setValueAtTime(520, now + 0.08);
+      metalOsc.frequency.exponentialRampToValueAtTime(48, now + 1.2);
 
-      metalGain.gain.setValueAtTime(0.6, now + 0.05);
-      metalGain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+      metalGain.gain.setValueAtTime(0.75, now + 0.08);
+      metalGain.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
 
       metalOsc.connect(metalGain);
       metalGain.connect(targetGain);
-      metalOsc.start(now + 0.05);
-      metalOsc.stop(now + 1.15);
+      metalOsc.start(now + 0.08);
+      metalOsc.stop(now + 1.45);
 
-      // Запуск непрерывной сирены и зашкаливания счетчика Гейгера
+      // Грохот падающих бетонных обломков биозащиты
+      for (let d = 0; d < 5; d++) {
+        const debrisTime = now + 0.35 + d * 0.32 + Math.random() * 0.15;
+        const dOsc = this.ctx.createOscillator();
+        const dGain = this.ctx.createGain();
+        dOsc.type = 'triangle';
+        dOsc.frequency.setValueAtTime(160 + Math.random() * 80, debrisTime);
+        dOsc.frequency.exponentialRampToValueAtTime(30, debrisTime + 0.28);
+
+        dGain.gain.setValueAtTime(0.45 - d * 0.06, debrisTime);
+        dGain.gain.exponentialRampToValueAtTime(0.001, debrisTime + 0.3);
+
+        dOsc.connect(dGain);
+        dGain.connect(targetGain);
+        dOsc.start(debrisTime);
+        dOsc.stop(debrisTime + 0.32);
+      }
+
+      // Запуск непрерывной системы аварийного оповещения С-40 + ревуна
       this.startSiren();
-      this.setRadiationLevel(35000);
+      this.setRadiationLevel(48000);
 
-      console.log('[SCADA Audio] Звуковой эффект ядерного взрыва воспроизведен!');
+      console.log('[SCADA Audio] Реалистичный процедурный ядерный взрыв воспроизведен!');
     } catch (err) {
-      console.warn('[SCADA Audio] Ошибка синтеза ядерного взрыва:', err);
+      console.warn('[SCADA Audio] Ошибка воспроизведения ядерного взрыва:', err);
     }
   }
 
+  /**
+   * Мощный процедурный звук промышленного взрыва / гидроудара / разрушения контура
+   */
   playExplosionBlast() {
     this.ensureReady();
     if (!this.ctx || this.isMuted) return;
@@ -676,23 +996,23 @@ class PlantAudioEngine {
       const now = this.ctx.currentTime;
       const targetGain = this.masterGain || this.ctx.destination;
 
-      // 1. Низкочастотный суб-басовый ударный импульс (дроп 110 -> 25 Гц)
+      // 1. Мощный суб-басовый компрессионный импульс (дроп 135 -> 22 Гц)
       const subOsc = this.ctx.createOscillator();
       const subGain = this.ctx.createGain();
       subOsc.type = 'triangle';
-      subOsc.frequency.setValueAtTime(120, now);
-      subOsc.frequency.exponentialRampToValueAtTime(24, now + 1.8);
+      subOsc.frequency.setValueAtTime(135, now);
+      subOsc.frequency.exponentialRampToValueAtTime(22, now + 2.0);
 
-      subGain.gain.setValueAtTime(0.85, now);
-      subGain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
+      subGain.gain.setValueAtTime(0.92, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
 
       subOsc.connect(subGain);
       subGain.connect(targetGain);
       subOsc.start(now);
-      subOsc.stop(now + 2.3);
+      subOsc.stop(now + 2.5);
 
-      // 2. Взрывной шумовой фронт волны с резонансным фильтром
-      const bufferSize = this.ctx.sampleRate * 2.5;
+      // 2. Взрывной акустический фронт разрыва металла и бетона
+      const bufferSize = this.ctx.sampleRate * 2.8;
       const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
@@ -704,37 +1024,39 @@ class PlantAudioEngine {
 
       const filter = this.ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(800, now);
-      filter.frequency.exponentialRampToValueAtTime(80, now + 2.2);
-      filter.Q.setValueAtTime(3.5, now);
+      filter.frequency.setValueAtTime(950, now);
+      filter.frequency.exponentialRampToValueAtTime(60, now + 2.5);
+      filter.Q.setValueAtTime(4.0, now);
 
       const noiseGain = this.ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.75, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
+      noiseGain.gain.setValueAtTime(0.85, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 2.7);
 
       whiteNoise.connect(filter);
       filter.connect(noiseGain);
       noiseGain.connect(targetGain);
 
       whiteNoise.start(now);
-      whiteNoise.stop(now + 2.5);
+      whiteNoise.stop(now + 2.8);
 
-      // 3. Металлический скрежет лопнувшего металла
+      // 3. Звон и скрежет лопнувшего корпуса/трубопровода
       const metalOsc = this.ctx.createOscillator();
       const metalGain = this.ctx.createGain();
       metalOsc.type = 'sawtooth';
-      metalOsc.frequency.setValueAtTime(340, now);
-      metalOsc.frequency.linearRampToValueAtTime(180, now + 0.4);
+      metalOsc.frequency.setValueAtTime(380, now);
+      metalOsc.frequency.linearRampToValueAtTime(140, now + 0.45);
 
-      metalGain.gain.setValueAtTime(0.35, now);
-      metalGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      metalGain.gain.setValueAtTime(0.45, now);
+      metalGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
 
       metalOsc.connect(metalGain);
       metalGain.connect(targetGain);
       metalOsc.start(now);
-      metalOsc.stop(now + 0.52);
+      metalOsc.stop(now + 0.58);
 
-      console.log('[SCADA Audio] Звуковой эффект взрыва воспроизведен');
+      // Включаем сирену при взрыве
+      this.startSiren();
+      console.log('[SCADA Audio] Реалистичный звук промышленного взрыва воспроизведен');
     } catch (err) {
       console.warn('[SCADA Audio] Ошибка синтеза взрыва:', err);
     }
