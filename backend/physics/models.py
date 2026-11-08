@@ -240,5 +240,5 @@ class TelemetryData:
     # Финал игры
     finale_triggered: bool = False
     finale_type: str = ""
-    finale_data: Dict[str, Any] = field(default_factory=dict)
+    finale_data: Optional[Dict[str, Any]] = None
     alarms: List[Dict[str, Any]] = field(default_factory=list)

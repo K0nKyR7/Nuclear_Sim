@@ -149,7 +149,7 @@ class SimulationEngine:
         # Финал игры
         self.finale_triggered: bool = False
         self.finale_type: str = ""
-        self.finale_data: Dict[str, Any] = {}
+        self.finale_data: Optional[Dict[str, Any]] = None
 
     def reset(self) -> None:
         """Сброс к исходному номинальному состоянию 100% мощности."""
@@ -167,7 +167,7 @@ class SimulationEngine:
         self.accident_start_time = None
         self.finale_triggered = False
         self.finale_type = ""
-        self.finale_data = {}
+        self.finale_data = None
 
         # Очистка сценариев предыдущей аварийной миссии при переходе на штатный регламент
         if mission_id != "CRISIS_LOCA" and self.active_scenarios.get("loca_leak"):
@@ -716,19 +716,14 @@ class SimulationEngine:
         else:
             self.operator_grade = "F (ТРИБУНАЛ)"
 
-        # Автоматическая проверка наступления финала
+        # Автоматическая проверка наступления финала (только при катастрофической аварии)
         if not self.finale_triggered:
-            m_info = MISSIONS.get(self.mission_id, MISSIONS["BASE_LOAD"])
-            target_dur = m_info.get("target_duration_s", 120.0)
-
             if self.thermal_model.nuclear_detonation:
                 self.evaluate_shift_and_trigger_finale(forced_type=FinaleType.PROMPT_CRITICAL.value)
             elif self.thermal_model.core_damage_pct >= 35.0:
                 self.evaluate_shift_and_trigger_finale(forced_type=FinaleType.CORE_MELTDOWN.value)
             elif self.mission_id == "COLD_SHUTDOWN" and self.plant_state == PlantState.COLD_SHUTDOWN:
                 self.evaluate_shift_and_trigger_finale(forced_type=FinaleType.COLD_SHUTDOWN_SAFE.value)
-            elif self.mission_id != "SANDBOX" and self.shift_time_s >= target_dur:
-                self.evaluate_shift_and_trigger_finale()
 
     def get_telemetry(self) -> TelemetryData:
         """
@@ -809,7 +804,7 @@ class SimulationEngine:
             mission_objectives=self.get_mission_objectives_status(),
             finale_triggered=self.finale_triggered,
             finale_type=self.finale_type,
-            finale_data=self.finale_data,
+            finale_data=self.finale_data if self.finale_triggered else None,
             alarms=alarm_dicts
         )
 

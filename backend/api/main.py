@@ -110,7 +110,7 @@ def get_full_telemetry_dict() -> dict:
         "mission_objectives": telemetry.mission_objectives,
         "finale_triggered": telemetry.finale_triggered,
         "finale_type": telemetry.finale_type,
-        "finale_data": telemetry.finale_data,
+        "finale_data": telemetry.finale_data if telemetry.finale_triggered else None,
         "is_paused": engine.is_paused,
         "time_scale": engine.time_scale,
         "active_scenarios": engine.active_scenarios,
@@ -131,7 +131,7 @@ async def run_simulation_loop():
 
             # Стримим телеметрию клиентам каждые 50 мс (20 FPS)
             broadcast_skip += 1
-            if broadcast_skip >= 1 and active_websockets:
+            if (broadcast_skip % 2 == 0) and active_websockets:
                 telemetry_dict = get_full_telemetry_dict()
                 msg = json.dumps(telemetry_dict)
                 # Рассылка всем подключенным клиентам

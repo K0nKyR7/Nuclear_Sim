@@ -136,11 +136,13 @@ class ScadaApp {
         this.previousExplosion = Boolean(data.explosion_active);
 
         // Обработка регламентов смены и множественных финалов (INES 0..7)
-        if ((data.finale_triggered || data.finale_data) && !this.isGameOver) {
-          const ft = data.finale_type || (data.finale_data && data.finale_data.type);
+        // Строгая валидация: запускается ТОЛЬКО если финал явно активирован и содержит валидные данные
+        const hasValidFinale = Boolean(data.finale_triggered) && Boolean(data.finale_data) && typeof data.finale_data === 'object' && Object.keys(data.finale_data).length > 0;
+        if (hasValidFinale && !this.isGameOver) {
+          const ft = data.finale_type || data.finale_data.type;
           if (ft === 'PROMPT_CRITICAL' || isNuclear) {
             this.triggerNuclearCatastropheGameOver(data);
-          } else if (data.finale_data) {
+          } else {
             this.triggerShiftFinale(data.finale_data, data);
           }
         }
@@ -1225,6 +1227,10 @@ class ScadaApp {
   resetPlantFromGameOver() {
     console.log('[SCADA Catastrophe] Перезагрузка энергоблока после завершения смены / катастрофы...');
     this.isGameOver = false;
+    this.previousNuclearDetonation = false;
+    this.previousExplosion = false;
+    this.previousRupture = false;
+    this.previousState = 'NORMAL_POWER';
     document.body.classList.remove('catastrophe-destroyed');
 
     const box = document.getElementById('gameOverBox');

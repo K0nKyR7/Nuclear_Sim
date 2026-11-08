@@ -72,9 +72,10 @@ class PlantAudioEngine {
       this.alarmGain.gain.setValueAtTime(0.58, this.ctx.currentTime);
       this.alarmGain.connect(this.masterGain);
 
+      this.initSharedNoiseBuffers();
       this.startAmbientHum();
       this.startGeigerRoutine();
-      console.log('[SCADA Audio] Процедурный аудио-движок инициализирован');
+      console.log('[SCADA Audio] Процедурный аудио-движок инициализирован с пулом шума');
     } catch (e) {
       console.warn('[SCADA Audio] Ошибка инициализации Web Audio:', e);
     }
@@ -85,6 +86,31 @@ class PlantAudioEngine {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+
+  initSharedNoiseBuffers() {
+    if (!this.ctx || this.sharedNoiseBuffer2s) return;
+    try {
+      const len2s = this.ctx.sampleRate * 2.0;
+      this.sharedNoiseBuffer2s = this.ctx.createBuffer(1, len2s, this.ctx.sampleRate);
+      const ch2s = this.sharedNoiseBuffer2s.getChannelData(0);
+      for (let i = 0; i < len2s; i++) {
+        ch2s[i] = Math.random() * 2 - 1;
+      }
+
+      const len5s = this.ctx.sampleRate * 5.0;
+      this.sharedNoiseBuffer5s = this.ctx.createBuffer(1, len5s, this.ctx.sampleRate);
+      const ch5s = this.sharedNoiseBuffer5s.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < len5s; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99 * b0 + white * 0.08;
+        b1 = 0.95 * b1 + white * 0.15;
+        b2 = 0.85 * b2 + white * 0.25;
+        ch5s[i] = (b0 + b1 + b2) * 0.45;
+      }
+    } catch (e) {}
   }
 
   toggleMute() {

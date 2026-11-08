@@ -229,17 +229,16 @@ class PlantMimic {
     this.animTime = (timestamp || 0) * 0.001;
     const ctx = this.ctx;
 
-    // Автоматическая подстройка размера под контейнер при изменении геометрии
+    // Оптимизированная проверка размера: по ResizeObserver или фоллбэк без observer
     const parent = this.canvas.parentElement;
-    const rect = parent ? parent.getBoundingClientRect() : null;
-    if (rect && rect.width > 20 && rect.height > 20) {
-      const curW = Math.round(rect.width);
-      const curH = Math.round(rect.height);
-      if (curW !== this.width || curH !== this.height) {
+    if (this.needsResize || !this.width || !this.height || this.width <= 10 || this.height <= 10) {
+      this.resize();
+      this.needsResize = false;
+    } else if (!this.resizeObserver && parent && parent.getBoundingClientRect) {
+      const rect = parent.getBoundingClientRect();
+      if (rect && (Math.round(rect.width) !== this.width || Math.round(rect.height) !== this.height)) {
         this.resize();
       }
-    } else if (!this.width || !this.height || this.width <= 10 || this.height <= 10) {
-      this.resize();
     }
 
     const w = this.width || 800;

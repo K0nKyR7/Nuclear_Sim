@@ -8,8 +8,16 @@ class TelemetryChart {
     this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
     this.maxPoints = 200;
     this.history = [];
+    this.needsResize = true;
 
-    window.addEventListener('resize', () => this.resize());
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', () => { this.needsResize = true; });
+      if ('ResizeObserver' in window && this.canvas && this.canvas.parentElement) {
+        try {
+          new ResizeObserver(() => { this.needsResize = true; }).observe(this.canvas.parentElement);
+        } catch (e) {}
+      }
+    }
     if (typeof ResizeObserver !== 'undefined' && this.canvas && this.canvas.parentElement) {
       this.resizeObserver = new ResizeObserver(() => this.resize());
       this.resizeObserver.observe(this.canvas.parentElement);
