@@ -324,11 +324,23 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
         logger.error(f"WebSocket исключение: {e}")
 
 
-# Монтирование статических файлов веб-интерфейса
+# Монтирование статических файлов веб-интерфейса (с отключением кэширования для мгновенных обновлений)
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
 if os.path.isdir(frontend_dir):
-    app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+    class NoCacheStaticFiles(StaticFiles):
+        def file_response(self, *args, **kwargs):
+            resp = super().file_response(*args, **kwargs)
+            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            return resp
+
+    app.mount("/static", NoCacheStaticFiles(directory=frontend_dir), name="static")
 
     @app.get("/")
     async def serve_index():
-        return FileResponse(os.path.join(frontend_dir, "index.html"))
+        resp = FileResponse(os.path.join(frontend_dir, "index.html"))
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp

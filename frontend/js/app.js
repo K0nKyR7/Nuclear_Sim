@@ -1762,6 +1762,20 @@ class ScadaApp {
         const content = document.getElementById(`tab_${tabId}`);
         if (content) content.classList.add('active');
 
+        if (tabId === 'tycoon') {
+          document.body.classList.add('tycoon-active');
+          const btnTycoon = document.getElementById('btnModeTycoon');
+          const btnSim = document.getElementById('btnModeSim');
+          if (btnTycoon) btnTycoon.classList.add('active');
+          if (btnSim) btnSim.classList.remove('active');
+        } else {
+          document.body.classList.remove('tycoon-active');
+          const btnTycoon = document.getElementById('btnModeTycoon');
+          const btnSim = document.getElementById('btnModeSim');
+          if (btnTycoon) btnTycoon.classList.remove('active');
+          if (btnSim) btnSim.classList.add('active');
+        }
+
         if (tabId === 'trends') {
           setTimeout(() => this.chart.resize(), 60);
         }

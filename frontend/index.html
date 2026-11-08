@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>БЩУ-1 | ЭНЕРГОБЛОК №1 ВВЭР-1000 | ПУЛЬТ ОПЕРАТОРА</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=1794400000">
+  <link rel="stylesheet" href="/static/css/style.css?v=1794500000">
 </head>
-<body class="desk-body">
+<body class="desk-body tycoon-active">
 
   <!-- ГЛОБАЛЬНЫЙ СЛОЙ ИЗНОСА, ЦАРАПИН И ПАТИНЫ МЕТАЛЛА -->
   <div class="desk-patina-layer"></div>
@@ -28,6 +28,18 @@
         <div class="rivet r-br"></div>
         <div class="plate-title">БЛОЧНЫЙ ЩИТ УПРАВЛЕНИЯ БЩУ-1</div>
         <div class="plate-sub">ЭНЕРГОБЛОК №1 • ВВЭР-1000 • ЗАВ. № 4821-86 • ГОСТ 25804-83</div>
+      </div>
+
+      <!-- ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМА ИГРЫ: СИМУЛЯТОР / ТАЙКУН -->
+      <div class="game-mode-selector" title="Переключение режима интерфейса">
+        <button id="btnModeSim" class="btn-mode-toggle" title="Режим реалистичного пульта БЩУ">
+          <span class="mode-icon">⚛️</span>
+          <span>ПУЛЬТ БЩУ</span>
+        </button>
+        <button id="btnModeTycoon" class="btn-mode-toggle tycoon-mode-btn active" title="Режим Ядерного Тайкуна и кликера (выработка, сбыт энергии, модули)">
+          <span class="mode-icon">💰</span>
+          <span>ТАЙКУН И КЛИКЕР ⚡</span>
+        </button>
       </div>
 
       <!-- КРУПНАЯ СИГНАЛЬНАЯ ЛАМПА СОСТОЯНИЯ РЕАКТОРА -->
@@ -112,6 +124,15 @@
     </div>
   </header>
 
+  <!-- ПОДСКАЗКА РЕЖИМА ТАЙКУНА -->
+  <div id="tycoonWelcomeToast" class="tycoon-welcome-toast">
+    <div class="toast-content">
+      <span class="toast-badge">💰 РЕЖИМ ТАЙКУНА АКТИВЕН</span>
+      <span class="toast-msg">Кликайте по реактору или кнопке «ВЫРАБОТКА ЭНЕРГИИ», продавайте электроэнергию в сеть и развивайте АЭС!</span>
+    </div>
+    <button id="btnCloseToast" class="toast-close" title="Закрыть">✕</button>
+  </div>
+
   <!-- ОСНОВНАЯ РАБОЧАЯ ЗОНА ОПЕРАТОРА (БЕЗ СКРОЛЛБАРА) -->
   <main class="main-viewport">
 
@@ -160,7 +181,7 @@
     <!-- ПРАВАЯ ЧАСТЬ: ПРИБОРНЫЙ ПУЛЬТ ОПЕРАТОРА (КОМПАКТНЫЕ ВКЛАДКИ БЕЗ СКРОЛЛИНГА) -->
     <aside class="side-console steel-rack">
       <nav class="console-tabs steel-tab-strip">
-        <button class="tab-btn active" data-tab="controls">
+        <button class="tab-btn" data-tab="controls">
           <span class="tab-indicator"></span>
           <span>ПРИБОРЫ 1К/2К</span>
         </button>
@@ -180,14 +201,14 @@
           <span class="tab-indicator"></span>
           <span>РЕГЛАМЕНТ</span>
         </button>
-        <button class="tab-btn tycoon-tab-btn" data-tab="tycoon" id="btnTabTycoon" title="Экономика АЭС: выработка, сбыт электроэнергии, модули и кадры">
+        <button class="tab-btn tycoon-tab-btn active" data-tab="tycoon" id="btnTabTycoon" title="Экономика АЭС: выработка, сбыт электроэнергии, модули и кадры">
           <span class="tab-indicator tycoon-indicator"></span>
           <span>💰 ТАЙКУН / РЫНОК</span>
         </button>
       </nav>
 
       <!-- ВКЛАДКА 1: ПРИБОРЫ И ДЕТАЛЬНАЯ ТЕЛЕМЕТРИЯ -->
-      <div id="tab_controls" class="tab-content active">
+      <div id="tab_controls" class="tab-content">
 
         <!-- АНАЛОГОВЫЕ СТРЕЛОЧНЫЕ ПРИБОРЫ (МАНОМЕТРЫ 1К / 2К) -->
         <div class="console-card analog-gauges-card">
@@ -962,7 +983,7 @@
       </div>
 
       <!-- ВКЛАДКА 6: ЯДЕРНЫЙ ТАЙКУН, КЛИКЕР И ПРОКАЧКА ЭНЕРГОБЛОКА -->
-      <div id="tab_tycoon" class="tab-content tycoon-tab-pane">
+      <div id="tab_tycoon" class="tab-content tycoon-tab-pane active">
         <!-- ГЛАВНАЯ ПАНЕЛЬ КЛИКЕРА И ТУРБО-БУСТА -->
         <div class="console-card tycoon-hero-card">
           <div class="panel-screw screw-tl"></div>
@@ -1589,9 +1610,9 @@
   </div>
 
   <!-- СКРИПТЫ АСУ ТП -->
-  <script src="/static/js/audio.js?v=1794400000"></script>
-  <script src="/static/js/mimic.js?v=1794400000"></script>
-  <script src="/static/js/chart.js?v=1794400000"></script>
-  <script src="/static/js/app.js?v=1794400000"></script>
+  <script src="/static/js/audio.js?v=1794500000"></script>
+  <script src="/static/js/mimic.js?v=1794500000"></script>
+  <script src="/static/js/chart.js?v=1794500000"></script>
+  <script src="/static/js/app.js?v=1794500000"></script>
 </body>
 </html>
