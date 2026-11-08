@@ -53,6 +53,9 @@ class ThermalHydraulicsModel:
         self.hydrogen_pct = 0.0             # Концентрация водорода H2 в ГО (%)
         self.nuclear_detonation = False     # Катастрофический сверхкритический ядерный взрыв
         self.reactor_head_blown = False     # Срыв верхнего блока и крышки реактора (200 тонн)
+        self.containment_spray_active = False # Спринклерная система ГО (снижение давления и подавление радиоактивности)
+        self.emergency_boron_active = False   # Аварийный впрыск бора высокого давления
+        self.total_energy_mwh = 0.0           # Суммарная выработанная электроэнергия (МВт·ч)
 
     def trigger_explosion(self, exp_type: str) -> None:
         self.explosion_active = True
@@ -85,6 +88,13 @@ class ThermalHydraulicsModel:
         Интегрирование теплогидравлических параметров за шаг dt.
         """
         dt = max(0.001, dt)
+
+        # Интегрирование выработки электроэнергии (МВт·ч)
+        self.total_energy_mwh += max(0.0, secondary.electric_power_mw * (dt / 3600.0))
+
+        # Аварийный ввод концентрированного бора высокого давления
+        if self.emergency_boron_active:
+            primary.boron_ppm = min(3000.0, primary.boron_ppm + 80.0 * dt)
 
         # -------------------------------------------------------------
         # 0. Контроль таймера взрыва и разрушений
@@ -189,8 +199,14 @@ class ThermalHydraulicsModel:
         
         # Температура холодной нити после ПГ
         t_cold_target = primary.t_hot_c - (q_sg_transferred / max(0.1, heat_cap_flow_mw_c))
-        t_cold_target = max(100.0, min(330.0, t_cold_target))
+        t_cold_target = max(40.0, min(330.0, t_cold_target))
         primary.t_cold_c += (t_cold_target - primary.t_cold_c) * (dt / 4.0)
+
+        # При расхолаживании заглушенного реактора через сброс пара в атмосферу
+        if thermal_power_rel < 0.05 and secondary.bru_a_pct > 0.0:
+            cool_speed = (secondary.bru_a_pct / 100.0) * 2.8 * dt
+            primary.t_cold_c = max(45.0, primary.t_cold_c - cool_speed)
+            primary.t_hot_c = max(50.0, primary.t_hot_c - cool_speed * 0.9)
 
         # -------------------------------------------------------------
         # 5. Парообразование и давление во 2 контуре
@@ -232,11 +248,12 @@ class ThermalHydraulicsModel:
         secondary.bru_k_pct += math.copysign(min(abs(d_k), 25.0 * dt), d_k)
         secondary.bru_k_pct = max(0.0, min(100.0, secondary.bru_k_pct))
 
-        # БРУ-А: уставка 7.1 МПа, сброс в атмосферу при превышении 7.1 .. 7.6 МПа
+        # БРУ-А: уставка 7.1 МПа, сброс в атмосферу при превышении 7.1 .. 7.6 МПа или ручное открытие
         if sg.steam_pressure_mpa > 7.1:
-            target_bru_a = min(100.0, (sg.steam_pressure_mpa - 7.1) / (7.6 - 7.1) * 100.0)
+            auto_bru_a = min(100.0, (sg.steam_pressure_mpa - 7.1) / (7.6 - 7.1) * 100.0)
         else:
-            target_bru_a = 0.0
+            auto_bru_a = 0.0
+        target_bru_a = max(auto_bru_a, getattr(secondary, 'manual_bru_a_pct', 0.0))
         d_a = target_bru_a - secondary.bru_a_pct
         secondary.bru_a_pct += math.copysign(min(abs(d_a), 30.0 * dt), d_a)
         secondary.bru_a_pct = max(0.0, min(100.0, secondary.bru_a_pct))
@@ -293,7 +310,9 @@ class ThermalHydraulicsModel:
             primary.saoz_accum_pressure_mpa = 1.5
 
         # При снижении давления в 1 контуре ниже давления гидроемкостей обратные клапаны открываются
-        if primary.pressure_mpa < primary.saoz_accum_pressure_mpa and primary.saoz_accum_level_pct > 0.1:
+        # (в регламенте планового расхолаживания при T < 140°C без аварийной течи гидроемкости САОЗ изолируются)
+        saoz_isolated = (thermal_power_rel < 0.05 and primary.t_hot_c < 140.0 and self.loca_leak_rate_kg_s == 0.0 and not self.primary_rupture)
+        if not saoz_isolated and primary.pressure_mpa < primary.saoz_accum_pressure_mpa and primary.saoz_accum_level_pct > 0.1:
             delta_p_saoz = primary.saoz_accum_pressure_mpa - primary.pressure_mpa
             saoz_flow = 4.0 * 125.0 * math.sqrt(max(0.0, delta_p_saoz) / 6.0)
             primary.saoz_active = True
@@ -320,9 +339,11 @@ class ThermalHydraulicsModel:
         pz.water_level_m = max(0.2, min(12.0, pz.water_level_m))
 
         # Автоматика КД:
-        # ТЭНы включаются при снижении давления ниже 15.6 МПа
+        # ТЭНы включаются при снижении давления ниже 15.6 МПа (отключаются при расхолаживании блока)
         if pz.heaters_auto:
-            if primary.pressure_mpa < 15.65:
+            if thermal_power_rel < 0.05 and primary.t_hot_c < 150.0:
+                pz.heaters_power_kw = max(0.0, pz.heaters_power_kw - 400.0 * dt)
+            elif primary.pressure_mpa < 15.65:
                 pz.heaters_power_kw = min(2520.0, pz.heaters_power_kw + 500.0 * dt)
             elif primary.pressure_mpa > 15.75:
                 pz.heaters_power_kw = max(200.0, pz.heaters_power_kw - 300.0 * dt)
@@ -352,7 +373,15 @@ class ThermalHydraulicsModel:
         # Течь 1 контура (LOCA):
         dp_loca = -(self.loca_leak_rate_kg_s / 500.0) * 0.3 * dt
 
-        primary.pressure_mpa += dp_heaters + dp_spray + dp_relief + dp_loca + dp_saoz + (self.nominal_p1_mpa + dp_temp - primary.pressure_mpa) * (dt / 12.0)
+        # Релаксация давления 1 контура к тепловому равновесию
+        eq_p1 = self.nominal_p1_mpa + dp_temp
+        relax_time = 12.0
+        if thermal_power_rel < 0.05 and primary.t_hot_c < 120.0:
+            # При холодном останове целевое давление снижается
+            eq_p1 = min(eq_p1, 1.8 + (primary.t_hot_c / 120.0) * 1.4)
+            relax_time = 7.0
+
+        primary.pressure_mpa += dp_heaters + dp_spray + dp_relief + dp_loca + dp_saoz + (eq_p1 - primary.pressure_mpa) * (dt / relax_time)
         primary.pressure_mpa = max(0.1, min(25.0, primary.pressure_mpa))
 
         # Расчет температуры насыщения 1 контура и запаса до закипания (субкулинга)
@@ -371,11 +400,22 @@ class ThermalHydraulicsModel:
         else:
             self.containment_pressure_kpa += (101.3 - self.containment_pressure_kpa) * (dt / 30.0)
 
+        # Действие спринклерной системы ГО: конденсация пара, сброс давления в ГО, промывка радиоактивности
+        if self.containment_spray_active:
+            if self.containment_pressure_kpa > 101.3:
+                self.containment_pressure_kpa = max(101.3, self.containment_pressure_kpa - 24.0 * dt)
+            if self.radiation_level_mr_h > 12.0:
+                self.radiation_level_mr_h = max(12.0, self.radiation_level_mr_h - (self.radiation_level_mr_h - 12.0) * 0.15 * dt)
+            if self.hydrogen_pct > 0.0:
+                self.hydrogen_pct = max(0.0, self.hydrogen_pct - 0.05 * dt)
+
         # Радиационный фон: норма 12 мкР/ч; растет пропорционально разрушению активной зоны
         if self.core_damage_pct > 0.1:
             rad_target = 12.0 + self.core_damage_pct * 120.0 + (self.core_damage_pct ** 2) * 8.0
             if self.primary_rupture or self.loca_leak_rate_kg_s > 0:
                 rad_target *= 4.0
+            if self.containment_spray_active:
+                rad_target *= 0.25  # Спринклер ГО осаждает до 75% радиоактивных аэрозолей
             self.radiation_level_mr_h += (rad_target - self.radiation_level_mr_h) * (dt / 3.0)
-        else:
+        elif not self.containment_spray_active:
             self.radiation_level_mr_h = 12.0

@@ -135,6 +135,16 @@ class ScadaApp {
         this.previousNuclearDetonation = isNuclear;
         this.previousExplosion = Boolean(data.explosion_active);
 
+        // Обработка регламентов смены и множественных финалов (INES 0..7)
+        if ((data.finale_triggered || data.finale_data) && !this.isGameOver) {
+          const ft = data.finale_type || (data.finale_data && data.finale_data.type);
+          if (ft === 'PROMPT_CRITICAL' || isNuclear) {
+            this.triggerNuclearCatastropheGameOver(data);
+          } else if (data.finale_data) {
+            this.triggerShiftFinale(data.finale_data, data);
+          }
+        }
+
         // Непрерывный свист выброса пара при разгерметизации контуров
         const isRuptured = Boolean(data.primary_rupture || data.steam_pipe_ruptured);
         if (isRuptured && !this.previousRupture) {
@@ -212,6 +222,87 @@ class ScadaApp {
     const p2Val = num(t.pressure_2k_mpa, 6.27);
     const elP2 = document.getElementById('m_p2');
     if (elP2) elP2.textContent = `${p2Val.toFixed(2)} МПа`;
+
+    const elScore = document.getElementById('m_operator_score');
+    if (elScore) {
+      const sc = num(t.operator_score, 100);
+      const gr = t.operator_grade || 'A+';
+      elScore.textContent = `${sc.toFixed(0)}% [${gr}]`;
+      elScore.className = sc >= 85 ? 'metric-val vfd-text score-text' : (sc >= 60 ? 'metric-val vfd-text warn' : 'metric-val vfd-text alarm');
+    }
+
+    // 1b. Параметры сменного задания и регламента
+    const shiftTimeVal = document.getElementById('shiftTimerVal');
+    if (shiftTimeVal) {
+      const curS = Math.floor(num(t.shift_time_s, 0));
+      const tgtS = Math.floor(num(t.shift_target_duration_s, 120));
+      const curMStr = `${Math.floor(curS / 60).toString().padStart(2, '0')}:${(curS % 60).toString().padStart(2, '0')}`;
+      const tgtMStr = `${Math.floor(tgtS / 60).toString().padStart(2, '0')}:${(tgtS % 60).toString().padStart(2, '0')}`;
+      shiftTimeVal.textContent = `${curMStr} / ${tgtMStr}`;
+    }
+
+    const shiftScoreVal = document.getElementById('shiftScoreVal');
+    if (shiftScoreVal) {
+      shiftScoreVal.textContent = `${num(t.operator_score, 100).toFixed(1)}%`;
+    }
+
+    const shiftGradeBadge = document.getElementById('shiftGradeBadge');
+    if (shiftGradeBadge) {
+      const gr = (t.operator_grade || 'A+').toUpperCase();
+      shiftGradeBadge.textContent = gr;
+      const grLetter = gr.charAt(0).toLowerCase();
+      shiftGradeBadge.className = `sm-grade grade-${grLetter}`;
+    }
+
+    const shiftEnergyVal = document.getElementById('shiftEnergyVal');
+    if (shiftEnergyVal) {
+      shiftEnergyVal.textContent = `${num(t.total_energy_mwh, 0).toFixed(1)} МВт·ч`;
+    }
+
+    const shiftViolationsVal = document.getElementById('shiftViolationsVal');
+    if (shiftViolationsVal) {
+      shiftViolationsVal.textContent = `${num(t.violations_count, 0)}`;
+    }
+
+    const shiftSelect = document.getElementById('shiftMissionSelect');
+    if (shiftSelect && document.activeElement !== shiftSelect && t.mission_id) {
+      shiftSelect.value = t.mission_id;
+    }
+
+    ['m_btn_base', 'm_btn_maneuver', 'm_btn_cold', 'm_btn_loca', 'm_btn_sbo', 'm_btn_sandbox'].forEach(btnId => {
+      const btn = document.getElementById(btnId);
+      if (btn && t.mission_id) {
+        const mKey = btn.getAttribute('data-mission');
+        btn.classList.toggle('active', mKey === t.mission_id);
+      }
+    });
+
+    const objListEl = document.getElementById('shiftObjList');
+    if (objListEl && Array.isArray(t.mission_objectives)) {
+      const currentCompleted = new Set(
+        t.mission_objectives.filter(o => o.done || o.status === 'completed').map(o => o.title)
+      );
+      if (this.lastCompletedObjectives) {
+        for (const title of currentCompleted) {
+          if (!this.lastCompletedObjectives.has(title)) {
+            if (window.plantAudio && typeof window.plantAudio.playObjectiveDing === 'function') {
+              window.plantAudio.playObjectiveDing();
+            }
+            break;
+          }
+        }
+      }
+      this.lastCompletedObjectives = currentCompleted;
+
+      const stateKey = `${t.mission_id}_${t.mission_objectives.map(o => o.status).join(',')}`;
+      if (this.lastObjStateKey !== stateKey) {
+        this.lastObjStateKey = stateKey;
+        objListEl.innerHTML = t.mission_objectives.map(o => {
+          const icon = o.status === 'completed' ? '✓' : (o.status === 'failed' ? '✗' : '○');
+          return `<li class="obj-item ${o.status || 'pending'}"><span class="obj-status-icon">${icon}</span> <span>${o.title}</span></li>`;
+        }).join('');
+      }
+    }
 
     // 2. Аналоговые стрелочные приборы (ОБМ-160 ГОСТ 8625)
     const needleP1 = document.getElementById('needleP1');
@@ -407,6 +498,24 @@ class ScadaApp {
       if (penTagMan) penTagMan.className = penOn ? 'toggle-tag' : 'status-badge on toggle-tag active';
     }
 
+    if (t.containment_spray_active !== undefined) {
+      const sprayLever = document.getElementById('spray_lever');
+      const sprayTagMan = document.getElementById('spray_tag_man');
+      const sprayTagAuto = document.getElementById('spray_tag_auto');
+      if (sprayLever) sprayLever.className = t.containment_spray_active ? 'tumbler-lever active' : 'tumbler-lever';
+      if (sprayTagAuto) sprayTagAuto.className = t.containment_spray_active ? 'status-badge on toggle-tag active' : 'status-badge toggle-tag';
+      if (sprayTagMan) sprayTagMan.className = t.containment_spray_active ? 'toggle-tag' : 'status-badge on toggle-tag active';
+    }
+
+    if (t.emergency_boron_active !== undefined) {
+      const eboronLever = document.getElementById('eboron_lever');
+      const eboronTagMan = document.getElementById('eboron_tag_man');
+      const eboronTagAuto = document.getElementById('eboron_tag_auto');
+      if (eboronLever) eboronLever.className = t.emergency_boron_active ? 'tumbler-lever active' : 'tumbler-lever';
+      if (eboronTagAuto) eboronTagAuto.className = t.emergency_boron_active ? 'status-badge on toggle-tag active' : 'status-badge toggle-tag';
+      if (eboronTagMan) eboronTagMan.className = t.emergency_boron_active ? 'toggle-tag' : 'status-badge on toggle-tag active';
+    }
+
     // 5. Светосигнальное табло сигнализаций (Annunciator Grid)
     if (!this.lampTestActive) {
       this.updateAnnunciator('ann_az5', t.state === 'SCRAMMED', true);
@@ -425,6 +534,9 @@ class ScadaApp {
       this.updateAnnunciator('ann_meltdown', Boolean(num(t.core_damage_pct, 0) > 25.0 || t.state === 'MELTDOWN'), true);
       this.updateAnnunciator('ann_radiation', Boolean(num(t.radiation_level_mr_h, 12) > 100.0), true);
       this.updateAnnunciator('ann_bypass', Boolean(t.safety_system_bypassed), true);
+      this.updateAnnunciator('ann_spray', Boolean(t.containment_spray_active), false);
+      this.updateAnnunciator('ann_cold_sd', t.state === 'COLD_SHUTDOWN', false);
+      this.updateAnnunciator('ann_mission_ok', Boolean(t.finale_triggered && (t.finale_type === 'TRIUMPH_SHIFT' || t.finale_type === 'COLD_SHUTDOWN_SAFE' || t.finale_type === 'CRISIS_CONTAINED')), false);
     }
 
 
@@ -819,6 +931,60 @@ class ScadaApp {
         this.sendControl('toggle_feedwater_pump', 0);
       });
     }
+
+    const toggleSpray = document.getElementById('toggle_spray_cont');
+    if (toggleSpray) {
+      toggleSpray.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        this.sendControl('toggle_containment_spray');
+      });
+    }
+
+    const toggleEmergBoron = document.getElementById('toggle_emerg_boron');
+    if (toggleEmergBoron) {
+      toggleEmergBoron.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        this.sendControl('toggle_emergency_boron');
+      });
+    }
+
+    // Сдача смены и завершение регламента
+    const btnComplete = document.getElementById('btnCompleteShift');
+    if (btnComplete) {
+      btnComplete.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        this.send({ type: 'end_shift' });
+      });
+    }
+
+    const btnEnd = document.getElementById('btnEndShift');
+    if (btnEnd) {
+      btnEnd.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        this.send({ type: 'end_shift' });
+      });
+    }
+
+    // Выбор миссии в выпадающем списке
+    const missionSelect = document.getElementById('shiftMissionSelect');
+    if (missionSelect) {
+      missionSelect.addEventListener('change', (e) => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        this.send({ type: 'mission', mission_id: e.target.value });
+      });
+    }
+
+    // Быстрые кнопки миссий
+    ['m_btn_base', 'm_btn_maneuver', 'm_btn_cold', 'm_btn_loca', 'm_btn_sbo', 'm_btn_sandbox'].forEach(btnId => {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          if (window.plantAudio) window.plantAudio.playSwitchClick();
+          const mKey = btn.getAttribute('data-mission');
+          if (mKey) this.send({ type: 'mission', mission_id: mKey });
+        });
+      }
+    });
   }
 
   startAnimationLoop() {
@@ -837,9 +1003,11 @@ class ScadaApp {
     };
     requestAnimationFrame(loop);
   }
+
   setupGameOverHandlers() {
     this.shatteredGlassEl = document.getElementById('crtShatteredGlass');
     this.gameOverModalEl = document.getElementById('gameOverModal');
+    this.inspectHudBarEl = document.getElementById('inspectHudBar');
     this.btnRestartGame = document.getElementById('btnRestartGame');
 
     if (this.btnRestartGame) {
@@ -848,11 +1016,51 @@ class ScadaApp {
       });
     }
 
+    const btnInspect = document.getElementById('btnInspectPanel');
+    if (btnInspect) {
+      btnInspect.addEventListener('click', () => {
+        if (window.plantAudio) window.plantAudio.playSwitchClick();
+        if (this.gameOverModalEl) {
+          this.gameOverModalEl.classList.remove('visible');
+        }
+        if (this.inspectHudBarEl) {
+          this.inspectHudBarEl.style.display = 'flex';
+        }
+      });
+    }
+
+    const btnReturn = document.getElementById('btnReturnToReport');
+    if (btnReturn) {
+      btnReturn.addEventListener('click', () => {
+        this.returnFromInspection();
+      });
+    }
+
+    const btnInspectRestart = document.getElementById('btnInspectRestart');
+    if (btnInspectRestart) {
+      btnInspectRestart.addEventListener('click', () => {
+        this.resetPlantFromGameOver();
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.isGameOver) {
+        if (this.gameOverModalEl && !this.gameOverModalEl.classList.contains('visible')) {
+          this.returnFromInspection();
+        }
+      }
+    });
+
     // Глобальная блокировка сломанных кнопок при катастрофе
     document.addEventListener('click', (e) => {
-      if (this.isGameOver) {
-        if (e.target && (e.target.closest('#btnRestartGame') || e.target.id === 'btnRestartGame')) {
-          return; // разрешаем кнопку перезапуска
+      if (this.isGameOver && document.body.classList.contains('catastrophe-destroyed')) {
+        if (e.target && (
+          e.target.closest('#btnRestartGame') || e.target.id === 'btnRestartGame' ||
+          e.target.closest('#btnInspectPanel') || e.target.id === 'btnInspectPanel' ||
+          e.target.closest('#btnReturnToReport') || e.target.id === 'btnReturnToReport' ||
+          e.target.closest('#btnInspectRestart') || e.target.id === 'btnInspectRestart'
+        )) {
+          return; // разрешаем кнопки перезапуска, возврата и осмотра пульта
         }
         const clickable = e.target.closest('button, input, select, .pmo-switch, .toggle-switch, .az5-btn');
         if (clickable) {
@@ -865,11 +1073,123 @@ class ScadaApp {
     }, true);
   }
 
+  returnFromInspection() {
+    if (window.plantAudio) window.plantAudio.playSwitchClick();
+    if (this.inspectHudBarEl) {
+      this.inspectHudBarEl.style.display = 'none';
+    }
+    if (this.gameOverModalEl) {
+      this.gameOverModalEl.classList.add('visible');
+    }
+  }
+
+  populateGameOverModal(finaleData) {
+    if (!finaleData) return;
+    const box = document.getElementById('gameOverBox');
+    if (box) {
+      box.classList.remove('triumph', 'cold-shutdown', 'crisis-contained', 'unplanned-scram', 'meltdown', 'fatal');
+      if (finaleData.type === 'TRIUMPH_SHIFT') box.classList.add('triumph');
+      else if (finaleData.type === 'COLD_SHUTDOWN_SAFE') box.classList.add('cold-shutdown');
+      else if (finaleData.type === 'CRISIS_CONTAINED') box.classList.add('crisis-contained');
+      else if (finaleData.type === 'UNPLANNED_SCRAM') box.classList.add('unplanned-scram');
+      else if (finaleData.type === 'CORE_MELTDOWN') box.classList.add('meltdown');
+      else box.classList.add('fatal');
+    }
+
+    const hazardIcon = document.getElementById('gameOverHazardIcon');
+    if (hazardIcon) {
+      if (finaleData.type === 'TRIUMPH_SHIFT') hazardIcon.textContent = '★';
+      else if (finaleData.type === 'COLD_SHUTDOWN_SAFE') hazardIcon.textContent = '❄';
+      else if (finaleData.type === 'CRISIS_CONTAINED') hazardIcon.textContent = '🛡';
+      else if (finaleData.type === 'UNPLANNED_SCRAM') hazardIcon.textContent = '⚡';
+      else if (finaleData.type === 'CORE_MELTDOWN') hazardIcon.textContent = '☣';
+      else hazardIcon.textContent = '☢';
+    }
+
+    const superTitle = document.getElementById('gameOverSuperTitle');
+    if (superTitle && finaleData.super_title) superTitle.textContent = finaleData.super_title;
+
+    const title = document.getElementById('gameOverTitle');
+    if (title && finaleData.title) title.textContent = finaleData.title;
+
+    const sub = document.getElementById('gameOverSub');
+    if (sub && finaleData.subtitle) sub.textContent = finaleData.subtitle;
+
+    const badge = document.getElementById('gameOverBadge');
+    if (badge && finaleData.badge_class) {
+      badge.className = finaleData.badge_class;
+      badge.innerHTML = `<span class="ines-level">УРОВЕНЬ INES: ${finaleData.ines_level}</span><span class="ines-text">${finaleData.badge_text}</span>`;
+    }
+
+    const leadText = document.getElementById('gameOverLeadText');
+    if (leadText && finaleData.lead_text) leadText.textContent = finaleData.lead_text;
+
+    const grid = document.getElementById('gameOverMetricsGrid');
+    if (grid && Array.isArray(finaleData.cards)) {
+      grid.innerHTML = finaleData.cards.map(c => `
+        <div class="postmortem-card ${c.cls || 'danger'}">
+          <div class="pm-lbl">${c.lbl}</div>
+          <div class="pm-val">${c.val}</div>
+          <div class="pm-sub">${c.sub}</div>
+        </div>
+      `).join('');
+    }
+
+    const res = document.getElementById('gameOverResolution');
+    if (res && finaleData.resolution) {
+      res.innerHTML = `<span class="res-stamp">${finaleData.stamp || 'РЕШЕНИЕ:'}</span><span>${finaleData.resolution}</span>`;
+    }
+
+    if (this.btnRestartGame && finaleData.restart_caption) {
+      const cap = this.btnRestartGame.querySelector('.restart-caption');
+      if (cap) cap.textContent = finaleData.restart_caption;
+    }
+  }
+
+  triggerShiftFinale(finaleData, data) {
+    if (this.isGameOver) return;
+    this.isGameOver = true;
+    console.log('[SCADA Finale] Завершение смены / регламента:', finaleData.type);
+
+    this.populateGameOverModal(finaleData);
+
+    if (window.plantAudio) {
+      if (finaleData.type === 'TRIUMPH_SHIFT') {
+        window.plantAudio.playTriumphFanfare();
+      } else if (finaleData.type === 'COLD_SHUTDOWN_SAFE') {
+        window.plantAudio.playColdShutdownConfirmation();
+      } else if (finaleData.type === 'CRISIS_CONTAINED') {
+        window.plantAudio.playCrisisContainedChime();
+      } else if (finaleData.type === 'UNPLANNED_SCRAM') {
+        if (typeof window.plantAudio.playUnplannedScramHorn === 'function') {
+          window.plantAudio.playUnplannedScramHorn();
+        } else {
+          window.plantAudio.playWarningChime();
+        }
+      } else if (finaleData.type === 'CORE_MELTDOWN') {
+        window.plantAudio.playWarningGong();
+      }
+    }
+
+    if (!this.gameOverModalEl) this.gameOverModalEl = document.getElementById('gameOverModal');
+    if (this.gameOverModalEl) this.gameOverModalEl.classList.add('visible');
+  }
+
   triggerNuclearCatastropheGameOver(data) {
     if (this.isGameOver) return;
     this.isGameOver = true;
 
     console.log('[SCADA Catastrophe] Ядерная катастрофа! Разрушение пульта и завершение игры...');
+
+    const box = document.getElementById('gameOverBox');
+    if (box) {
+      box.classList.remove('triumph', 'cold-shutdown', 'crisis-contained', 'meltdown');
+      box.classList.add('fatal');
+    }
+
+    if (data && data.finale_data) {
+      this.populateGameOverModal(data.finale_data);
+    }
 
     // 1. Сильнейшая сейсмическая тряска экрана
     if (this.mimic) this.mimic.triggerScreenShake(3.5);
@@ -894,21 +1214,33 @@ class ScadaApp {
 
     // 5. Через 2.8 с: экранное завершение игры (GameOver модальное окно)
     setTimeout(() => {
+      if (data && data.finale_data) {
+        this.populateGameOverModal(data.finale_data);
+      }
       if (!this.gameOverModalEl) this.gameOverModalEl = document.getElementById('gameOverModal');
       if (this.gameOverModalEl) this.gameOverModalEl.classList.add('visible');
     }, 2800);
   }
 
   resetPlantFromGameOver() {
-    console.log('[SCADA Catastrophe] Перезагрузка энергоблока после катастрофы...');
+    console.log('[SCADA Catastrophe] Перезагрузка энергоблока после завершения смены / катастрофы...');
     this.isGameOver = false;
     document.body.classList.remove('catastrophe-destroyed');
+
+    const box = document.getElementById('gameOverBox');
+    if (box) {
+      box.classList.remove('triumph', 'cold-shutdown', 'crisis-contained', 'meltdown', 'fatal');
+    }
 
     if (!this.shatteredGlassEl) this.shatteredGlassEl = document.getElementById('crtShatteredGlass');
     if (this.shatteredGlassEl) this.shatteredGlassEl.classList.remove('active');
 
     if (!this.gameOverModalEl) this.gameOverModalEl = document.getElementById('gameOverModal');
     if (this.gameOverModalEl) this.gameOverModalEl.classList.remove('visible');
+
+    if (this.inspectHudBarEl) {
+      this.inspectHudBarEl.style.display = 'none';
+    }
 
     if (window.plantAudio) {
       window.plantAudio.stopSiren();
@@ -926,6 +1258,7 @@ class ScadaApp {
 
     const cover = document.getElementById('az5Cover');
     if (cover) cover.classList.remove('opened');
+    if (cover) cover.classList.remove('open');
   }
 
   triggerSparkOnElement(el) {

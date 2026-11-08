@@ -70,6 +70,10 @@
         <span class="metric-label">ВРЕМЯ</span>
         <div class="vfd-tube"><span id="simTime" class="metric-val vfd-text">0.0 с</span></div>
       </div>
+      <div class="metric-pill vfd-box" title="ИВ-6: Рейтинг и категория оператора БЩУ">
+        <span class="metric-label">РЕЙТИНГ</span>
+        <div class="vfd-tube"><span id="m_operator_score" class="metric-val vfd-text score-text">100% [A+]</span></div>
+      </div>
     </div>
 
     <!-- КНОПКИ И ТУМБЛЕРЫ УПРАВЛЕНИЯ ВРЕМЕНЕМ (100% НЕПРОЗРАЧНЫЕ) -->
@@ -220,6 +224,10 @@
         <button class="tab-btn" data-tab="scenarios">
           <span class="tab-indicator"></span>
           <span>АВАРИИ</span>
+        </button>
+        <button class="tab-btn" data-tab="mission">
+          <span class="tab-indicator"></span>
+          <span>РЕГЛАМЕНТ</span>
         </button>
       </nav>
 
@@ -627,6 +635,18 @@
               <div class="tile-glass-texture"></div>
               <div class="tile-text">АЗ-5 ЗАБЛОКИРОВАНА</div>
             </div>
+            <div id="ann_spray" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">СПРИНКЛЕР ГО ВКЛЮЧЕН</div>
+            </div>
+            <div id="ann_cold_sd" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">ХОЛОДНЫЙ ОСТАНОВ БЛОКА</div>
+            </div>
+            <div id="ann_mission_ok" class="annunciator-tile">
+              <div class="tile-glass-texture"></div>
+              <div class="tile-text">РЕГЛАМЕНТ СМЕНЫ ВЫПОЛНЕН</div>
+            </div>
           </div>
         </div>
 
@@ -891,6 +911,98 @@
             </button>
           </div>
 
+        </div>
+      </div>
+
+      <!-- ВКЛАДКА 5: СМЕННОЕ ЗАДАНИЕ И РЕГЛАМЕНТЫ БЩУ -->
+      <div id="tab_mission" class="tab-content">
+        <div class="console-card metal-panel shift-card">
+          <div class="panel-screw screw-tl"></div>
+          <div class="panel-screw screw-tr"></div>
+          <div class="panel-screw screw-bl"></div>
+          <div class="panel-screw screw-br"></div>
+
+          <div class="card-title">
+            <span>СМЕННОЕ ЗАДАНИЕ И РЕГЛАМЕНТ ОПЕРАТОРА</span>
+            <span class="plate-badge">ГОСТ 25804-83</span>
+          </div>
+
+          <div class="shift-selector-panel">
+            <div class="shift-select-row">
+              <label for="shiftMissionSelect" class="shift-select-label">ПРОГРАММА СМЕНЫ:</label>
+              <select id="shiftMissionSelect" class="shift-mission-dropdown">
+                <option value="BASE_LOAD">1. Несение базовой нагрузки (1000 МВт)</option>
+                <option value="MANEUVER">2. Диспетчерский маневр (600 МВт)</option>
+                <option value="COLD_SHUTDOWN">3. Регламент холодного останова</option>
+                <option value="CRISIS_LOCA">4. Локализация течи 1 контура (LOCA)</option>
+                <option value="CRISIS_SBO">5. Полное обесточивание блока (SBO)</option>
+                <option value="SANDBOX">6. Свободный режим (Песочница)</option>
+              </select>
+            </div>
+
+            <div class="mission-buttons-grid">
+              <button id="m_btn_base" class="mission-quick-btn active" data-mission="BASE_LOAD" title="Базовая нагрузка 1000 МВт">
+                <span class="m-icon">⚡</span> 1000 МВт БАЗА
+              </button>
+              <button id="m_btn_maneuver" class="mission-quick-btn" data-mission="MANEUVER" title="Маневр мощностью до 600 МВт">
+                <span class="m-icon">📉</span> МАНЕВР 600
+              </button>
+              <button id="m_btn_cold" class="mission-quick-btn" data-mission="COLD_SHUTDOWN" title="Регламент холодного останова">
+                <span class="m-icon">❄</span> ХОЛОДНЫЙ ОСТАНОВ
+              </button>
+              <button id="m_btn_loca" class="mission-quick-btn" data-mission="CRISIS_LOCA" title="Аварийная течь 1 контура">
+                <span class="m-icon">🚨</span> ТЕЧЬ LOCA
+              </button>
+              <button id="m_btn_sbo" class="mission-quick-btn" data-mission="CRISIS_SBO" title="Обесточивание собственных нужд">
+                <span class="m-icon">⚡</span> ОБЕСТОЧИВАНИЕ
+              </button>
+              <button id="m_btn_sandbox" class="mission-quick-btn" data-mission="SANDBOX" title="Свободные эксперименты">
+                <span class="m-icon">🔧</span> ПЕСОЧНИЦА
+              </button>
+            </div>
+          </div>
+
+          <div class="shift-status-dashboard">
+            <div class="shift-metrics-cluster">
+              <div class="shift-metric-cell">
+                <span class="sm-lbl">ВРЕМЯ СМЕНЫ</span>
+                <span id="shiftTimerVal" class="sm-val vfd-text">00:00 / 02:00</span>
+              </div>
+              <div class="shift-metric-cell">
+                <span class="sm-lbl">РЕЙТИНГ</span>
+                <span id="shiftScoreVal" class="sm-val score-val">100.0%</span>
+              </div>
+              <div class="shift-metric-cell">
+                <span class="sm-lbl">КАТЕГОРИЯ</span>
+                <span id="shiftGradeBadge" class="sm-grade grade-a">A+</span>
+              </div>
+              <div class="shift-metric-cell">
+                <span class="sm-lbl">ВЫРАБОТКА Э/Э</span>
+                <span id="shiftEnergyVal" class="sm-val energy-val">0.0 МВт·ч</span>
+              </div>
+              <div class="shift-metric-cell">
+                <span class="sm-lbl">НАРУШЕНИЯ</span>
+                <span id="shiftViolationsVal" class="sm-val violations-val">0</span>
+              </div>
+            </div>
+
+            <div class="shift-objectives-box">
+              <div class="obj-box-title">ОПЕРАТИВНЫЕ ЦЕЛИ РЕГЛАМЕНТА:</div>
+              <ul id="shiftObjList" class="mission-obj-list">
+                <li class="obj-item pending"><span class="obj-status-icon">○</span> Удерживать N_эл в диапазоне 975..1025 МВт</li>
+                <li class="obj-item pending"><span class="obj-status-icon">○</span> Запас до закипания ΔTнас &gt; 18.0 °C</li>
+                <li class="obj-item pending"><span class="obj-status-icon">○</span> Давление 1К в пределах 15.2 .. 16.2 МПа</li>
+                <li class="obj-item pending"><span class="obj-status-icon">○</span> Не допустить аварийных срабатываний АЗ-5</li>
+              </ul>
+            </div>
+
+            <div class="shift-action-container">
+              <button id="btnCompleteShift" class="btn-shift-action" title="Сдать смену и получить официальное заключение Государственной комиссии">
+                <span class="shift-action-star">★</span>
+                <span class="shift-action-text">СДАТЬ СМЕНУ / ЗАВЕРШИТЬ РЕГЛАМЕНТ</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1173,6 +1285,34 @@
               <span class="status-badge on toggle-tag active" id="pen_tag_auto">АВТ</span>
             </div>
           </div>
+          <div class="regulator-toggle-row switch-row" id="toggle_spray_cont" title="Спринклерная система ГО (подавление пара и давления в аварии)">
+            <span class="reg-label">СПРИНКЛЕР ГО</span>
+            <div class="toggle-switch-unit">
+              <span class="toggle-tag" id="spray_tag_man">ОТКЛ</span>
+              <span class="toggle-guard guard-left"></span>
+              <div class="tumbler-bushing">
+                <div class="tumbler-lever" id="spray_lever">
+                  <span class="tumbler-bat"></span>
+                </div>
+              </div>
+              <span class="toggle-guard guard-right"></span>
+              <span class="status-badge on toggle-tag" id="spray_tag_auto">ВКЛ</span>
+            </div>
+          </div>
+          <div class="regulator-toggle-row switch-row" id="toggle_emerg_boron" title="Аварийный впрыск высококонцентрированного бора ВД">
+            <span class="reg-label">АВАР. БОР ВД</span>
+            <div class="toggle-switch-unit">
+              <span class="toggle-tag" id="eboron_tag_man">ОТКЛ</span>
+              <span class="toggle-guard guard-left"></span>
+              <div class="tumbler-bushing">
+                <div class="tumbler-lever" id="eboron_lever">
+                  <span class="tumbler-bat"></span>
+                </div>
+              </div>
+              <span class="toggle-guard guard-right"></span>
+              <span class="status-badge on toggle-tag" id="eboron_tag_auto">ВКЛ</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1195,6 +1335,10 @@
             <span class="kme-lens-dot blue"></span>
             <span>💡 ОПРОБОВАНИЕ ТАБЛО</span>
           </button>
+          <button id="btnEndShift" class="btn-kme btn-kme-green" title="Сдать смену дежурному диспетчеру станции">
+            <span class="kme-lens-dot green"></span>
+            <span>★ СДАТЬ СМЕНУ</span>
+          </button>
         </div>
 
       </div>
@@ -1202,32 +1346,43 @@
     </div>
   </footer>
 
-  <!-- ТЕРМИНАЛЬНОЕ ОКНО ЗАВЕРШЕНИЯ ИГРЫ: ЯДЕРНАЯ КАТАСТРОФА -->
+  <!-- ПЛАВАЮЩИЙ ИНСПЕКЦИОННЫЙ HUD ПРИ ОСМОТРЕ ПУЛЬТА БЩУ -->
+  <div id="inspectHudBar" class="inspect-hud-bar" style="display: none;">
+    <span class="inspect-hud-badge">РЕЖИМ ОСМОТРА БЩУ</span>
+    <button id="btnReturnToReport" class="btn-inspect-return" title="Вернуться к официальному заключению Государственной комиссии">
+      <span>📜 ЗАКЛЮЧЕНИЕ ГОСКОМИССИИ</span>
+    </button>
+    <button id="btnInspectRestart" class="btn-inspect-restart" title="Перезагрузить энергоблок и начать заново">
+      <span>⟳ НАЧАТЬ ЗАНОВО</span>
+    </button>
+  </div>
+
+  <!-- ТЕРМИНАЛЬНОЕ ОКНО ЗАВЕРШЕНИЯ ИГРЫ: МНОЖЕСТВЕННЫЕ ФИНАЛЫ И ГОСКОМИССИЯ -->
   <div id="gameOverModal" class="game-over-modal-overlay">
-    <div class="game-over-box metal-heavy-panel">
+    <div id="gameOverBox" class="game-over-box metal-heavy-panel">
       <div class="game-over-header">
-        <div class="hazard-tri-glow">☢</div>
+        <div id="gameOverHazardIcon" class="hazard-tri-glow">☢</div>
         <div class="game-over-title-group">
-          <div class="game-over-super-title">ГОСКОМИССИЯ ПО ЧРЕЗВЫЧАЙНЫМ СИТУАЦИЯМ СССР • МИНЭНЕРГО</div>
-          <h1 class="game-over-title">ЭНЕРГОБЛОК №1 ПОЛНОСТЬЮ УНИЧТОЖЕН</h1>
-          <div class="game-over-sub">СВЕРХКРИТИЧЕСКИЙ РАЗГОН РЕАКТОРА • РАЗРУШЕНИЕ ГЕРМООБОЛОЧКИ И ЭНЕРГОБЛОКА</div>
+          <div id="gameOverSuperTitle" class="game-over-super-title">ГОСКОМИССИЯ ПО ЧРЕЗВЫЧАЙНЫМ СИТУАЦИЯМ СССР • МИНЭНЕРГО</div>
+          <h1 id="gameOverTitle" class="game-over-title">ЭНЕРГОБЛОК №1 ПОЛНОСТЬЮ УНИЧТОЖЕН</h1>
+          <div id="gameOverSub" class="game-over-sub">СВЕРХКРИТИЧЕСКИЙ РАЗГОН РЕАКТОРА • РАЗРУШЕНИЕ ГЕРМООБОЛОЧКИ И ЭНЕРГОБЛОКА</div>
         </div>
       </div>
 
       <div class="game-over-body">
         <div class="game-over-report-card">
-          <div class="ines-badge-fatal">
+          <div id="gameOverBadge" class="ines-badge-fatal">
             <span class="ines-level">УРОВЕНЬ INES: 7</span>
             <span class="ines-text">ГЛОБАЛЬНАЯ ЯДЕРНАЯ АВАРИЯ</span>
           </div>
 
-          <p class="report-lead-text">
+          <p id="gameOverLeadText" class="report-lead-text">
             В результате неуправляемого разгона мощности на мгновенных нейтронах произошла детонация реакторной установки. 
             200-тонная верхняя крышка реактора сорвана взрывом, корпус разорван, активная зона расплавлена и испарена в атмосферу.
             Оборудование пульта управления разбито и выведено из строя ударной волной.
           </p>
 
-          <div class="postmortem-metrics-grid">
+          <div id="gameOverMetricsGrid" class="postmortem-metrics-grid">
             <div class="postmortem-card danger">
               <div class="pm-lbl">СОСТОЯНИЕ АКТИВНОЙ ЗОНЫ</div>
               <div class="pm-val">100% РАЗРУШЕНИЕ / ИСПАРЕНИЕ</div>
@@ -1253,7 +1408,7 @@
             </div>
           </div>
 
-          <div class="official-resolution-banner">
+          <div id="gameOverResolution" class="official-resolution-banner">
             <span class="res-stamp">РЕШЕНИЕ:</span>
             <span>Дальнейшая эксплуатация энергоблока невозможна. Персонал эвакуирован. Объявлена 30-километровая зона отчуждения.</span>
           </div>
@@ -1261,6 +1416,10 @@
       </div>
 
       <div class="game-over-footer">
+        <button id="btnInspectPanel" class="btn-inspect-panel" title="Временно свернуть отчет и осмотреть состояние пульта БЩУ">
+          <span class="inspect-icon">👁</span>
+          <span>ОСМОТРЕТЬ ПУЛЬТ</span>
+        </button>
         <button id="btnRestartGame" class="btn-restart-game" title="Сбросить все повреждения и заново запустить энергоблок">
           <span class="restart-glow-icon">⟳</span>
           <span class="restart-caption">ПЕРЕЗАГРУЗИТЬ ЭНЕРГОБЛОК (НАЧАТЬ СНАЧАЛА)</span>

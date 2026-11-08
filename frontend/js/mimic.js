@@ -3576,6 +3576,95 @@ class PlantMimic {
       ctx.restore();
     }
 
+    // 6. СПРИНКЛЕРНАЯ СИСТЕМА ГО (Аварийное орошение купола и оборудования)
+    if (s.containment_spray_active) {
+      ctx.save();
+      const sprayY = 30;
+      const nozzleXs = [rx - rw * 0.4, rx, rx + rw * 0.4, sgx - sgw * 0.3, sgx, sgx + sgw * 0.3];
+
+      // Коллектор спринклерной системы под куполом ГО
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(nozzleXs[0] - 20, sprayY);
+      ctx.lineTo(nozzleXs[nozzleXs.length - 1] + 20, sprayY);
+      ctx.stroke();
+
+      // Орошающие факелы форсунок
+      nozzleXs.forEach((nx, nidx) => {
+        // Форсунка
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(nx - 4, sprayY - 3, 8, 6);
+
+        // Конус распыляемой воды и бора
+        const coneGrad = ctx.createLinearGradient(nx, sprayY, nx, sprayY + 220);
+        coneGrad.addColorStop(0, 'rgba(56, 189, 248, 0.55)');
+        coneGrad.addColorStop(0.5, 'rgba(125, 211, 252, 0.25)');
+        coneGrad.addColorStop(1, 'rgba(224, 242, 254, 0.02)');
+
+        ctx.fillStyle = coneGrad;
+        ctx.beginPath();
+        ctx.moveTo(nx, sprayY + 3);
+        ctx.lineTo(nx - 42, sprayY + 220);
+        ctx.lineTo(nx + 42, sprayY + 220);
+        ctx.closePath();
+        ctx.fill();
+
+        // Анимированные падающие капли
+        ctx.fillStyle = '#bae6fd';
+        for (let d = 0; d < 8; d++) {
+          const dy = sprayY + ((d * 26 + this.animTime * 320 + nidx * 15) % 210);
+          const dx = nx + (Math.sin(dy * 0.1 + d + nidx) * (dy - sprayY) * 0.18);
+          ctx.beginPath();
+          ctx.arc(dx, dy, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Информационная плашка работы спринклеров
+      ctx.fillStyle = 'rgba(14, 116, 144, 0.85)';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(rx - 80, sprayY + 12, 220, 20, 3);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = 'bold 9.5px Consolas, monospace';
+      ctx.fillStyle = '#f0f9ff';
+      ctx.fillText('СПРИНКЛЕР ГО: ОРОШЕНИЕ (1200 м³/ч)', rx - 72, sprayY + 26);
+      ctx.restore();
+    }
+
+    // 7. ИНДИКАЦИЯ РЕЖИМА ХОЛОДНОГО ОСТАНОВА (БЕЗОПАСНАЯ ПОДКРИТИЧНОСТЬ)
+    if (s.state === 'COLD_SHUTDOWN') {
+      ctx.save();
+      // Мягкое прохладное лазурно-голубое свечение активной зоны
+      const coldGrad = ctx.createRadialGradient(rx, ry, 10, rx, ry, rw * 0.45);
+      coldGrad.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+      coldGrad.addColorStop(0.7, 'rgba(14, 165, 233, 0.15)');
+      coldGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+
+      ctx.fillStyle = coldGrad;
+      ctx.beginPath();
+      ctx.arc(rx, ry, rw * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Табличка безопасного останова
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(rx - 120, ry + rh * 0.38, 240, 24, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = 'bold 10px Consolas, monospace';
+      ctx.fillStyle = '#67e8f9';
+      ctx.fillText('РЕЖИМ: ХОЛОДНЫЙ ОСТАНОВ (T < 100°C)', rx - 105, ry + rh * 0.38 + 16);
+      ctx.restore();
+    }
+
     ctx.restore();
   }
 
@@ -3632,6 +3721,11 @@ class PlantMimic {
       borderCol = '#f59e0b';
       titleCol = '#f59e0b';
       titleText = '⚡ АВАРИЙНЫЙ ОСТАНОВ: АЗ-5 СРАБОТАЛА';
+    } else if (s.state === 'COLD_SHUTDOWN') {
+      bgCol = 'rgba(12, 74, 96, 0.92)';
+      borderCol = '#38bdf8';
+      titleCol = '#e0f2fe';
+      titleText = '❄ РЕЖИМ: ХОЛОДНЫЙ ОСТАНОВ (ПОДКРИТИЧЕН, T < 100°C)';
     }
 
     // Рамка панели

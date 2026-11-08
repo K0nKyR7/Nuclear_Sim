@@ -11,6 +11,25 @@ class PlantState(str, Enum):
     ACCIDENT = "ACCIDENT"                   # Аварийный режим
     EXPLOSION = "EXPLOSION"                 # Взрыв оборудования / гидроудар
     MELTDOWN = "MELTDOWN"                   # Плавление активной зоны
+    COLD_SHUTDOWN = "COLD_SHUTDOWN"         # Холодный подкритический останов
+
+
+class ShiftMission(str, Enum):
+    BASE_LOAD = "BASE_LOAD"                 # Несение базовой нагрузки (1000 МВт)
+    MANEUVER = "MANEUVER"                   # Диспетчерский маневр: глубокая разгрузка до 600 МВт
+    COLD_SHUTDOWN = "COLD_SHUTDOWN"         # Плановый перевод реактора в холодный останов
+    CRISIS_LOCA = "CRISIS_LOCA"             # Аварийная локализация течи 1 контура (LOCA)
+    CRISIS_SBO = "CRISIS_SBO"               # Полное обесточивание энергоблока (Station Blackout)
+    SANDBOX = "SANDBOX"                     # Свободный режим / Исследовательские испытания
+
+
+class FinaleType(str, Enum):
+    TRIUMPH_SHIFT = "TRIUMPH_SHIFT"               # Успешная сдача смены на отлично
+    COLD_SHUTDOWN_SAFE = "COLD_SHUTDOWN_SAFE"     # Безопасный регламентный холодный останов
+    CRISIS_CONTAINED = "CRISIS_CONTAINED"         # Героическая локализация тяжелой аварии
+    CORE_MELTDOWN = "CORE_MELTDOWN"               # Плавление активной зоны (корий)
+    PROMPT_CRITICAL = "PROMPT_CRITICAL"           # Сверхкритический ядерный взрыв / разрушение блока
+    UNPLANNED_SCRAM = "UNPLANNED_SCRAM"           # Внеплановый останов блока защитой АЗ-5
 
 
 class AlarmLevel(str, Enum):
@@ -130,6 +149,7 @@ class SecondaryLoopState:
     bru_k_pct: float = 0.0
     # Сброс в атмосферу (БРУ-А, 0..100%)
     bru_a_pct: float = 0.0
+    manual_bru_a_pct: float = 0.0
     # Питательные электронасосы (ПЭН, 2 рабочих, 1 резервный)
     feedwater_pumps_on: List[bool] = field(default_factory=lambda: [True, True, False])
 
@@ -205,4 +225,20 @@ class TelemetryData:
     nuclear_detonation: bool = False
     reactor_head_blown: bool = False
     safety_system_bypassed: bool = False
+    containment_spray_active: bool = False
+    emergency_boron_active: bool = False
+    # Сменное задание, регламенты и оценка оператора
+    mission_id: str = "BASE_LOAD"
+    mission_title: str = "НЕСЕНИЕ БАЗОВОЙ НАГРУЗКИ"
+    shift_time_s: float = 0.0
+    shift_target_duration_s: float = 120.0
+    operator_score: float = 100.0
+    operator_grade: str = "A+ (МАСТЕР)"
+    violations_count: int = 0
+    total_energy_mwh: float = 0.0
+    mission_objectives: List[Dict[str, Any]] = field(default_factory=list)
+    # Финал игры
+    finale_triggered: bool = False
+    finale_type: str = ""
+    finale_data: Dict[str, Any] = field(default_factory=dict)
     alarms: List[Dict[str, Any]] = field(default_factory=list)

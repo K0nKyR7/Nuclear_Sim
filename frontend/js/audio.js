@@ -1226,6 +1226,177 @@ class PlantAudioEngine {
       osc.stop(now + 0.09);
     } catch (e) {}
   }
+
+  /**
+   * Торжественные советские фанфары успешного завершения смены (мажорное трезвучие на медных духовых)
+   */
+  playTriumphFanfare() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      const notes = [
+        { f: 261.63, t: 0.0, d: 0.22 },   // C4
+        { f: 329.63, t: 0.18, d: 0.22 },  // E4
+        { f: 392.00, t: 0.36, d: 0.28 },  // G4
+        { f: 523.25, t: 0.58, d: 1.40 },  // C5 (удержание)
+        { f: 659.25, t: 0.60, d: 1.38 },  // E5
+        { f: 783.99, t: 0.62, d: 1.36 }   // G5
+      ];
+
+      notes.forEach(({ f, t, d }) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(f, now + t);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(f * 2.8, now + t);
+
+        gain.gain.setValueAtTime(0.0001, now + t);
+        gain.gain.linearRampToValueAtTime(0.24, now + t + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + t + d);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(targetGain);
+
+        osc.start(now + t);
+        osc.stop(now + t + d + 0.05);
+      });
+    } catch (e) {
+      console.warn('[SCADA Audio] Ошибка фанфар:', e);
+    }
+  }
+
+  /**
+   * Спокойный гармоничный колокол безопасного холодного останова
+   */
+  playColdShutdownConfirmation() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      [220, 440, 660, 880].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = (idx % 2 === 0) ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.25 / (idx + 1), now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+
+        osc.connect(gain);
+        gain.connect(targetGain);
+        osc.start(now);
+        osc.stop(now + 2.6);
+      });
+    } catch (e) {}
+  }
+
+  /**
+   * Героический аккорд стабилизации реактора и предотвращения катастрофы
+   */
+  playCrisisContainedChime() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      [349.23, 440.0, 523.25, 698.46].forEach((f, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(f, now);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1400, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.20, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(targetGain);
+        osc.start(now);
+        osc.stop(now + 2.3);
+      });
+    } catch (e) {}
+  }
+
+  /**
+   * Короткий звонкий сигнал выполнения промежуточной цели сменного регламента
+   */
+  playObjectiveDing() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1760, now + 0.08);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+      osc.connect(gain);
+      gain.connect(targetGain);
+      osc.start(now);
+      osc.stop(now + 0.38);
+    } catch (e) {}
+  }
+
+  /**
+   * Предупреждающий низкочастотный двухтональный гудок внепланового останова АЗ-5
+   */
+  playUnplannedScramHorn() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      [196.0, 146.8].forEach((f, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(f, now + idx * 0.22);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, now + idx * 0.22);
+
+        gain.gain.setValueAtTime(0.001, now + idx * 0.22);
+        gain.gain.linearRampToValueAtTime(0.22, now + idx * 0.22 + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.22 + 0.7);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(targetGain);
+
+        osc.start(now + idx * 0.22);
+        osc.stop(now + idx * 0.22 + 0.75);
+      });
+    } catch (e) {}
+  }
 }
 
 // Глобальный экземпляр

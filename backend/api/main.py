@@ -97,6 +97,20 @@ def get_full_telemetry_dict() -> dict:
         "nuclear_detonation": telemetry.nuclear_detonation,
         "reactor_head_blown": telemetry.reactor_head_blown,
         "safety_system_bypassed": telemetry.safety_system_bypassed,
+        "containment_spray_active": telemetry.containment_spray_active,
+        "emergency_boron_active": telemetry.emergency_boron_active,
+        "mission_id": telemetry.mission_id,
+        "mission_title": telemetry.mission_title,
+        "shift_time_s": telemetry.shift_time_s,
+        "shift_target_duration_s": telemetry.shift_target_duration_s,
+        "operator_score": telemetry.operator_score,
+        "operator_grade": telemetry.operator_grade,
+        "violations_count": telemetry.violations_count,
+        "total_energy_mwh": telemetry.total_energy_mwh,
+        "mission_objectives": telemetry.mission_objectives,
+        "finale_triggered": telemetry.finale_triggered,
+        "finale_type": telemetry.finale_type,
+        "finale_data": telemetry.finale_data,
         "is_paused": engine.is_paused,
         "time_scale": engine.time_scale,
         "active_scenarios": engine.active_scenarios,
@@ -194,6 +208,27 @@ def set_speed(speed: float = 1.0):
     return {"status": "ok", "speed": engine.time_scale}
 
 
+class MissionRequest(BaseModel):
+    mission_id: str
+
+
+@app.post("/api/mission")
+def set_mission(req: MissionRequest):
+    engine.set_mission(req.mission_id)
+    return {"status": "ok", "mission_id": engine.mission_id}
+
+
+@app.post("/api/shift/end")
+def end_shift():
+    engine.evaluate_shift_and_trigger_finale(manual=True)
+    return {
+        "status": "ok",
+        "finale_triggered": engine.finale_triggered,
+        "finale_type": engine.finale_type,
+        "finale_data": engine.finale_data
+    }
+
+
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -217,6 +252,10 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     engine.apply_control("set_time_scale", data.get("value"))
                 elif msg_type == "ack_alarms":
                     engine.apply_control("ack_alarms")
+                elif msg_type == "mission":
+                    engine.set_mission(data.get("mission_id") or data.get("value"))
+                elif msg_type == "end_shift":
+                    engine.evaluate_shift_and_trigger_finale(manual=True)
             except Exception as e:
                 logger.error(f"Ошибка разбора команды клиента: {e}")
     except WebSocketDisconnect:

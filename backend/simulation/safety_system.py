@@ -90,7 +90,7 @@ class SafetySystem:
 
         # 4. Защита по первому контуру
         safe_trip(primary.pressure_mpa > 17.6, f"Аварийное давление 1К: {primary.pressure_mpa:.2f} МПа (> 17.6 МПа)")
-        safe_trip(primary.pressure_mpa < 14.0, f"Падение давления 1К: {primary.pressure_mpa:.2f} МПа (< 14.0 МПа)")
+        safe_trip(primary.pressure_mpa < 14.0 and kinetics.relative_neutron_flux >= 0.05, f"Падение давления 1К: {primary.pressure_mpa:.2f} МПа (< 14.0 МПа)")
         safe_trip(primary.t_hot_c > 330.0, f"Перегрев теплоносителя: Tвых = {primary.t_hot_c:.1f} °C (> 330 °C)")
 
         # Контроль запаса до закипания теплоносителя на выходе из активной зоны (ΔTнас)
@@ -134,6 +134,12 @@ class SafetySystem:
                 return PlantState.EXPLOSION
             if getattr(thermal_model, 'steam_pipe_ruptured', False) or getattr(thermal_model, 'loca_leak_rate_kg_s', 0.0) > 0:
                 return PlantState.ACCIDENT
+
+        # Проверка режима холодного подкритического останова
+        if (kinetics.relative_neutron_flux < 0.05 and primary.t_hot_c < 100.0 and 
+            primary.boron_ppm >= 1800.0 and primary.pressure_mpa < 3.5 and 
+            controls.rod_position_pct <= 5.0):
+            return PlantState.COLD_SHUTDOWN
 
         if self.scrammed:
             return PlantState.SCRAMMED
