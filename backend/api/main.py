@@ -5,10 +5,10 @@ import os
 from contextlib import asynccontextmanager
 from typing import List, Set, Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 
 from ..simulation.engine import SimulationEngine
@@ -114,7 +114,9 @@ def get_full_telemetry_dict() -> dict:
         "is_paused": engine.is_paused,
         "time_scale": engine.time_scale,
         "active_scenarios": engine.active_scenarios,
-        "alarms": telemetry.alarms
+        "alarms": telemetry.alarms,
+        "tycoon_upgrades": engine.tycoon_upgrades,
+        "tycoon_boost_active": engine.tycoon_boost_active
     }
 
 
@@ -229,6 +231,58 @@ def end_shift():
     }
 
 
+class TycoonUpgradeRequest(BaseModel):
+    upgrade: str
+    level: int = 1
+
+
+@app.post("/api/tycoon/upgrade")
+def post_tycoon_upgrade(req: TycoonUpgradeRequest):
+    engine.apply_control("tycoon_upgrade", {"upgrade": req.upgrade, "level": req.level})
+    return {"status": "ok", "upgrades": engine.tycoon_upgrades}
+
+
+@app.post("/api/tycoon/boost")
+def post_tycoon_boost(active: bool = True):
+    engine.apply_control("tycoon_boost", active)
+    return {"status": "ok", "boost_active": engine.tycoon_boost_active}
+
+
+@app.get("/api/tycoon/info")
+def get_tycoon_info():
+    return {
+        "upgrades": engine.tycoon_upgrades,
+        "boost_active": engine.tycoon_boost_active,
+        "boost_timer": engine.tycoon_boost_timer,
+        "total_energy_mwh": round(engine.thermal_model.total_energy_mwh, 2)
+    }
+
+
+@app.get("/boost")
+def get_boost_route(request: Request, active: bool = True):
+    engine.apply_control("tycoon_boost", active)
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept:
+        return RedirectResponse(url="/?boost=active", status_code=303)
+    return {
+        "status": "ok",
+        "boost_active": engine.tycoon_boost_active,
+        "boost_timer": engine.tycoon_boost_timer,
+        "message": "⚡ Турбо-Буст активирован! Режим 3.0x выработки и доходов включен."
+    }
+
+
+@app.post("/boost")
+def post_boost_route(active: bool = True):
+    engine.apply_control("tycoon_boost", active)
+    return {
+        "status": "ok",
+        "boost_active": engine.tycoon_boost_active,
+        "boost_timer": engine.tycoon_boost_timer,
+        "message": "⚡ Турбо-Буст активирован! Режим 3.0x выработки и доходов включен."
+    }
+
+
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -256,6 +310,10 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     engine.set_mission(data.get("mission_id") or data.get("value"))
                 elif msg_type == "end_shift":
                     engine.evaluate_shift_and_trigger_finale(manual=True)
+                elif msg_type == "tycoon_upgrade":
+                    engine.apply_control("tycoon_upgrade", data.get("value"))
+                elif msg_type == "tycoon_boost":
+                    engine.apply_control("tycoon_boost", data.get("value"))
             except Exception as e:
                 logger.error(f"Ошибка разбора команды клиента: {e}")
     except WebSocketDisconnect:

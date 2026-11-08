@@ -1,4 +1,1019 @@
 /**
+ * Экономический движок ядерного тайкуна / кликера АЭС ВВЭР-1000
+ * Моделирует выработку электроэнергии, торговлю на оптовом рынке ОРЭМ,
+ * модернизацию реакторного отделения, строительство модулей АЭС,
+ * наем персонала, систему Турбо-Буста (/boost) и инвестиционный престиж Росатома.
+ */
+class PlantTycoon {
+  constructor(app) {
+    this.app = app;
+    this.money = 500000.0;
+    this.totalEarned = 500000.0;
+    this.storedEnergyMWh = 0.0;
+    this.maxEnergyStorageMWh = 50.0;
+    this.marketPriceMWh = 4500.0;
+    this.marketTrend = 1;
+    this.marketTimer = 0.0;
+    this.autoSellGrid = true;
+    this.boostCharge = 0.0;
+    this.boostActive = false;
+    this.boostTimer = 0.0;
+    this.boostDuration = 15.0;
+    this.boostMultiplier = 3.0;
+    this.clickCount = 0;
+    this.prestigeLevel = 0;
+    this.prestigeBonusPct = 0.0;
+    this.currentSubtab = 'reactor';
+    this.autoClickAccumulator = 0.0;
+    this.saveAccumulator = 0.0;
+    this.currentNetIncomePerSec = 0.0;
+
+    // 1. Прокачка реактора (Upgrades)
+    this.upgrades = {
+      fuel_enrichment: {
+        id: 'fuel_enrichment',
+        name: 'Обогащение топлива U-235',
+        desc: '+20% к выработке и силе клика',
+        icon: '⚛️',
+        level: 1,
+        maxLevel: 15,
+        baseCost: 150000,
+        costMult: 1.55
+      },
+      gcn_pumps: {
+        id: 'gcn_pumps',
+        name: 'Модернизация ГЦН-195М',
+        desc: '+15% к расходу 1К и надежности',
+        icon: '🔄',
+        level: 1,
+        maxLevel: 15,
+        baseCost: 220000,
+        costMult: 1.5
+      },
+      steam_generators: {
+        id: 'steam_generators',
+        name: 'Парогенераторы ПГВ-1500',
+        desc: '+25% к паропроизводительности 2К',
+        icon: '💨',
+        level: 1,
+        maxLevel: 15,
+        baseCost: 350000,
+        costMult: 1.6
+      },
+      turbine_generator: {
+        id: 'turbine_generator',
+        name: 'Турбогенератор ТВВ-1200',
+        desc: '+30% к электрическому КПД генератора',
+        icon: '⚡',
+        level: 1,
+        maxLevel: 15,
+        baseCost: 500000,
+        costMult: 1.65
+      },
+      suz_automation: {
+        id: 'suz_automation',
+        name: 'Цифровой АСУ СУЗ «Скала-3»',
+        desc: '+1 автоклик в секунду за уровень',
+        icon: '🎛️',
+        level: 0,
+        maxLevel: 10,
+        baseCost: 400000,
+        costMult: 1.7
+      },
+      pz_stabilizer: {
+        id: 'pz_stabilizer',
+        name: 'Компенсатор давления КД-1600',
+        desc: 'Стабилизация давления, защита от аварий',
+        icon: '🛡️',
+        level: 1,
+        maxLevel: 10,
+        baseCost: 280000,
+        costMult: 1.5
+      },
+      tolerant_fuel: {
+        id: 'tolerant_fuel',
+        name: 'Толерантное ATF-топливо',
+        desc: '+50% к стоимости продажи энергии',
+        icon: '🧪',
+        level: 0,
+        maxLevel: 5,
+        baseCost: 1500000,
+        costMult: 2.2
+      }
+    };
+
+    // 2. Модули АЭС (Modules)
+    this.modules = {
+      district_heating: {
+        id: 'district_heating',
+        name: 'Теплофикация моногорода (ТЭЦ)',
+        desc: 'Пассивный доход от теплофикации жилых массивов',
+        icon: '🏙️',
+        count: 0,
+        maxCount: 10,
+        baseCost: 300000,
+        costMult: 1.65,
+        incomePerSec: 18000
+      },
+      data_center: {
+        id: 'data_center',
+        name: 'Дата-центр и майнинг «Росатом-ЦОД»',
+        desc: 'Потребление чистой энергии по спецтарифу',
+        icon: '🖥️',
+        count: 0,
+        maxCount: 8,
+        baseCost: 900000,
+        costMult: 1.75,
+        incomePerSec: 65000
+      },
+      hydrogen_plant: {
+        id: 'hydrogen_plant',
+        name: 'Электролизный водородный комплекс',
+        desc: 'Экспорт чистого водорода H2 для металлургов',
+        icon: '💧',
+        count: 0,
+        maxCount: 6,
+        baseCost: 2800000,
+        costMult: 1.9,
+        incomePerSec: 220000
+      },
+      spent_fuel_reproc: {
+        id: 'spent_fuel_reproc',
+        name: 'Комплекс переработки ОЯТ (ЗЯТЦ)',
+        desc: 'Замкнутый топливный цикл и федеральные субсидии',
+        icon: '♻️',
+        count: 0,
+        maxCount: 4,
+        baseCost: 8000000,
+        costMult: 2.1,
+        incomePerSec: 750000
+      },
+      supercomputer_lab: {
+        id: 'supercomputer_lab',
+        name: 'НИИ Атомного моделирования R&D',
+        desc: '+20% ко всей выработке станции',
+        icon: '🔬',
+        count: 0,
+        maxCount: 3,
+        baseCost: 22000000,
+        costMult: 2.4,
+        incomePerSec: 1800000
+      },
+      unit_two: {
+        id: 'unit_two',
+        name: 'Энергоблок №2 ВВЭР-1200',
+        desc: 'Мегапроект: удваивает мощность и дает колоссальный доход!',
+        icon: '🏭',
+        count: 0,
+        maxCount: 1,
+        baseCost: 65000000,
+        costMult: 1.0,
+        incomePerSec: 5000000
+      }
+    };
+
+    // 3. Персонал и кадры (Staff)
+    this.staff = {
+      operators: {
+        id: 'operators',
+        name: 'Операторы БЩУ (ВИУР / ВИУТ)',
+        desc: '+20 000 ₽ к силе клика за человека',
+        icon: '👨‍💼',
+        count: 1,
+        maxCount: 50,
+        baseCost: 50000,
+        costMult: 1.3,
+        salaryPerSec: 300
+      },
+      safety_physicists: {
+        id: 'safety_physicists',
+        name: 'Инженеры-физики отдела ОЯБ',
+        desc: 'Ускоряют зарядку Турбо-Буста на +15%',
+        icon: '👨‍🔬',
+        count: 1,
+        maxCount: 30,
+        baseCost: 90000,
+        costMult: 1.35,
+        salaryPerSec: 500
+      },
+      maintenance_crew: {
+        id: 'maintenance_crew',
+        name: 'Слесари цеха ЦТАИ',
+        desc: 'Снижают износ оборудования и расходы на ремонт',
+        icon: '🔧',
+        count: 1,
+        maxCount: 40,
+        baseCost: 70000,
+        costMult: 1.3,
+        salaryPerSec: 400
+      },
+      market_traders: {
+        id: 'market_traders',
+        name: 'Трейдеры оптового рынка ОРЭМ',
+        desc: '+5% к биржевому тарифу продажи энергии',
+        icon: '📊',
+        count: 0,
+        maxCount: 20,
+        baseCost: 180000,
+        costMult: 1.4,
+        salaryPerSec: 1200
+      },
+      chief_engineer: {
+        id: 'chief_engineer',
+        name: 'Главный инженер станции (ГИС)',
+        desc: '+30% к суммарной эффективности энергоблока',
+        icon: '🎖️',
+        count: 0,
+        maxCount: 1,
+        baseCost: 6000000,
+        costMult: 1.0,
+        salaryPerSec: 18000
+      }
+    };
+
+    this.loadState();
+    this.initDomBindings();
+    this.startLoop();
+  }
+
+  formatMoney(num) {
+    if (typeof num !== 'number' || isNaN(num)) return '0 ₽';
+    if (num >= 1e9) return (num / 1e9).toFixed(2) + ' Млрд ₽';
+    if (num >= 1e6) return (num / 1e6).toFixed(2) + ' Млн ₽';
+    return Math.floor(num).toLocaleString('ru-RU') + ' ₽';
+  }
+
+  getItemCost(item) {
+    const current = (item.level !== undefined) ? item.level : item.count;
+    return Math.round(item.baseCost * Math.pow(item.costMult, current));
+  }
+
+  handleManualClick(clientX, clientY) {
+    this.clickCount++;
+    const fuelBonus = (this.upgrades.fuel_enrichment.level - 1) * 0.20;
+    const operatorBonus = this.staff.operators.count * 0.20;
+    const atfBonus = this.upgrades.tolerant_fuel.level * 0.50;
+    const gisIncentive = this.staff.chief_engineer.count ? 0.30 : 0.0;
+    const prestigeMult = 1.0 + (this.prestigeBonusPct / 100.0);
+    const boostMult = this.boostActive ? this.boostMultiplier : 1.0;
+
+    const basePulse = 50000.0;
+    const clickGain = basePulse * (1.0 + fuelBonus + operatorBonus + atfBonus + gisIncentive) * prestigeMult * boostMult;
+
+    this.money += clickGain;
+    this.totalEarned += clickGain;
+
+    // Зарядка буста кликами
+    const chargePerClick = 2.5 * (1.0 + this.staff.safety_physicists.count * 0.15);
+    if (!this.boostActive) {
+      this.boostCharge = Math.min(100.0, this.boostCharge + chargePerClick);
+    }
+
+    // Резервирование энергии
+    if (this.storedEnergyMWh < this.maxEnergyStorageMWh) {
+      this.storedEnergyMWh = Math.min(this.maxEnergyStorageMWh, this.storedEnergyMWh + 0.15);
+    }
+
+    if (window.plantAudio) {
+      if (typeof window.plantAudio.playClickPulse === 'function') window.plantAudio.playClickPulse();
+      if (typeof window.plantAudio.playCashChime === 'function') window.plantAudio.playCashChime();
+    }
+
+    this.createFloatingText(`+${this.formatMoney(clickGain)}`, clientX, clientY);
+    this.updateUI();
+  }
+
+  createFloatingText(text, x, y) {
+    if (typeof document === 'undefined' || !document.createElement || !document.body) return;
+    try {
+      const existing = document.querySelectorAll('.tycoon-floating-text');
+      if (existing.length >= 16 && existing[0].parentNode) {
+        existing[0].parentNode.removeChild(existing[0]);
+      }
+
+      const floater = document.createElement('div');
+      floater.className = 'tycoon-floating-text';
+      floater.textContent = text;
+      const posX = (typeof x === 'number' && x > 0) ? x : ((typeof window !== 'undefined' ? window.innerWidth : 800) / 2);
+      const posY = (typeof y === 'number' && y > 0) ? y : ((typeof window !== 'undefined' ? window.innerHeight : 600) / 2);
+      floater.style.left = `${posX}px`;
+      floater.style.top = `${posY}px`;
+      document.body.appendChild(floater);
+      setTimeout(() => {
+        if (floater.parentNode) floater.parentNode.removeChild(floater);
+      }, 1000);
+    } catch (e) {}
+  }
+
+  activateBoost(force = false) {
+    if (this.boostActive) return '⚡ Турбо-Буст уже активен!';
+    if (!force && this.boostCharge < 100.0) return 'Турбо-Буст еще не заряжен (нужно 100%)';
+
+    this.boostActive = true;
+    this.boostTimer = this.boostDuration;
+    this.boostCharge = 0.0;
+
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.add('turbo-boost-active');
+    }
+
+    if (window.plantAudio && typeof window.plantAudio.playBoostActivate === 'function') {
+      window.plantAudio.playBoostActivate();
+    }
+
+    if (this.app && typeof this.app.sendControl === 'function') {
+      this.app.sendControl('tycoon_boost', true);
+    }
+
+    this.createFloatingText('⚡ ТУРБО-БУСТ (3.0x)!', typeof window !== 'undefined' ? window.innerWidth / 2 : 500, 200);
+    this.updateUI();
+    return '⚡ ТУРБО-БУСТ АКТИВИРОВАН!';
+  }
+
+  triggerBoost() {
+    return this.activateBoost(true);
+  }
+
+  executeCommand(rawCmd) {
+    if (!rawCmd || typeof rawCmd !== 'string') return '';
+    const cmd = rawCmd.trim().toLowerCase();
+    const cmdInput = document.getElementById('tycoonCmdInput');
+    if (cmdInput) cmdInput.value = '';
+
+    if (cmd === '/boost' || cmd === 'boost' || cmd === '/b' || cmd === 'turbo' || cmd === '/turbo') {
+      const res = this.activateBoost(true);
+      this.createFloatingText('⚡ /BOOST: ТУРБО-РЕЖИМ ВКЛЮЧЕН!', typeof window !== 'undefined' ? window.innerWidth / 2 : 500, 180);
+      return res;
+    } else if (cmd === '/money' || cmd === 'money' || cmd === '/cash') {
+      const grant = 1000000.0;
+      this.money += grant;
+      this.totalEarned += grant;
+      if (window.plantAudio && typeof window.plantAudio.playCashChime === 'function') {
+        window.plantAudio.playCashChime();
+      }
+      this.createFloatingText(`+${this.formatMoney(grant)} (Субсидия Минэнерго)`, typeof window !== 'undefined' ? window.innerWidth / 2 : 500, 220);
+      this.updateUI();
+      return `💰 Начислена субсидия: +${this.formatMoney(grant)}`;
+    } else if (cmd === '/sell' || cmd === 'sell') {
+      this.sellBattery();
+      return '🔋 Батареи разряжены на биржу!';
+    } else if (cmd === '/prestige' || cmd === 'prestige') {
+      this.claimPrestige();
+      return '🏛️ Федеральный грант Росатома запрошен!';
+    } else if (cmd === '/click' || cmd === 'click') {
+      this.handleManualClick();
+      return '⚡ Импульс мощности выполнен!';
+    } else if (cmd === '/help' || cmd === 'help' || cmd === '/?') {
+      alert('Доступные команды Tycoon:\n/boost - мгновенная активация Турбо-Буста (3.0x)\n/money - получить федеральную субсидию 1 000 000 ₽\n/sell - сбросить энергию батарей на биржу ОРЭМ\n/prestige - инвестиционный грант Росатома\n/click - импульс выработки реактора');
+      return 'Доступные команды: /boost, /money, /sell, /prestige, /click, /help';
+    } else {
+      this.createFloatingText(`Неизвестная команда: ${rawCmd}`, typeof window !== 'undefined' ? window.innerWidth / 2 : 500, 250);
+      return `Неизвестная команда: ${rawCmd}. Введите /boost или /help`;
+    }
+  }
+
+  startLoop() {
+    if (typeof setInterval === 'undefined') return;
+    setInterval(() => {
+      this.tick(0.1);
+    }, 100);
+  }
+
+  onTelemetry(data) {
+    if (data && typeof data.electric_power_mw === 'number') {
+      this.lastElectricMw = data.electric_power_mw;
+    }
+  }
+
+  tick(dt) {
+    // 1. Управление таймером буста
+    if (this.boostActive) {
+      this.boostTimer -= dt;
+      if (this.boostTimer <= 0) {
+        this.boostActive = false;
+        this.boostTimer = 0;
+        if (typeof document !== 'undefined' && document.body) {
+          document.body.classList.remove('turbo-boost-active');
+        }
+        if (this.app && typeof this.app.sendControl === 'function') {
+          this.app.sendControl('tycoon_boost', false);
+        }
+      }
+    }
+
+    // 2. Колебания рыночного тарифа ОРЭМ
+    this.marketTimer += dt;
+    if (this.marketTimer >= 15.0) {
+      this.marketTimer = 0.0;
+      this.marketTrend = Math.random() > 0.48 ? 1 : -1;
+      const delta = (Math.random() * 600.0 - 250.0) * this.marketTrend;
+      this.marketPriceMWh = Math.max(3200.0, Math.min(7800.0, this.marketPriceMWh + delta));
+    }
+
+    // 3. Выработка электроэнергии реактором
+    let elMw = (this.lastElectricMw !== undefined) ? this.lastElectricMw : 1000.0;
+    const turbineMult = 1.0 + (this.upgrades.turbine_generator.level - 1) * 0.03;
+    const fuelMult = 1.0 + (this.upgrades.fuel_enrichment.level - 1) * 0.20;
+    const sgMult = 1.0 + (this.upgrades.steam_generators.level - 1) * 0.15;
+    const unitTwoMult = 1.0 + (this.modules.unit_two.count * 1.0);
+    const effectiveMw = elMw * turbineMult * fuelMult * sgMult * unitTwoMult;
+
+    const energyGeneratedMWh = (effectiveMw * (dt / 3600.0));
+    const boostMult = this.boostActive ? this.boostMultiplier : 1.0;
+    const prestigeMult = 1.0 + (this.prestigeBonusPct / 100.0);
+    const traderBonus = 1.0 + (this.staff.market_traders.count * 0.05);
+    const atfBonus = 1.0 + (this.upgrades.tolerant_fuel.level * 0.15);
+    const effectiveTariff = this.marketPriceMWh * traderBonus * atfBonus;
+
+    let grossIncomeTick = 0.0;
+
+    if (this.autoSellGrid) {
+      const gridRevenue = energyGeneratedMWh * effectiveTariff * prestigeMult * boostMult;
+      grossIncomeTick += gridRevenue;
+      this.money += gridRevenue;
+      this.totalEarned += gridRevenue;
+    } else {
+      this.storedEnergyMWh = Math.min(this.maxEnergyStorageMWh, this.storedEnergyMWh + energyGeneratedMWh);
+    }
+
+    // 4. Пассивный доход модулей
+    let moduleIncomeTick = 0.0;
+    Object.values(this.modules).forEach(m => {
+      moduleIncomeTick += (m.count * m.incomePerSec * dt);
+    });
+    const rAndDMult = 1.0 + (this.modules.supercomputer_lab.count * 0.20);
+    moduleIncomeTick = moduleIncomeTick * rAndDMult * prestigeMult * boostMult;
+    grossIncomeTick += moduleIncomeTick;
+    this.money += moduleIncomeTick;
+    this.totalEarned += moduleIncomeTick;
+
+    // 5. Расходы на зарплату персонала
+    let salaryTick = 0.0;
+    Object.values(this.staff).forEach(s => {
+      salaryTick += (s.count * s.salaryPerSec * dt);
+    });
+    this.money = Math.max(0.0, this.money - salaryTick);
+
+    this.currentNetIncomePerSec = Math.round((grossIncomeTick - salaryTick) / dt);
+
+    // 6. Автоклик АСУ СУЗ «Скала-3»
+    if (this.upgrades.suz_automation.level > 0) {
+      this.autoClickAccumulator += dt;
+      if (this.autoClickAccumulator >= 1.0) {
+        this.autoClickAccumulator = 0.0;
+        const autoCount = this.upgrades.suz_automation.level;
+        const autoGain = 20000.0 * autoCount * prestigeMult * boostMult;
+        this.money += autoGain;
+        this.totalEarned += autoGain;
+        if (!this.boostActive) {
+          this.boostCharge = Math.min(100.0, this.boostCharge + 0.5 * autoCount);
+        }
+      }
+    }
+
+    // 7. Медленная пассивная зарядка буста на номинале
+    if (elMw >= 900.0 && !this.boostActive) {
+      this.boostCharge = Math.min(100.0, this.boostCharge + 0.25 * dt);
+    }
+
+    // 8. Автосохранение
+    this.saveAccumulator += dt;
+    if (this.saveAccumulator >= 3.0) {
+      this.saveAccumulator = 0.0;
+      this.saveState();
+    }
+
+    this.updateUI();
+  }
+
+  buyUpgrade(key) {
+    const item = this.upgrades[key];
+    if (!item || item.level >= item.maxLevel) return;
+    const cost = this.getItemCost(item);
+    if (this.money < cost) return;
+
+    this.money -= cost;
+    item.level++;
+
+    if (window.plantAudio && typeof window.plantAudio.playUpgradePurchased === 'function') {
+      window.plantAudio.playUpgradePurchased();
+    }
+
+    if (this.app && typeof this.app.sendControl === 'function') {
+      this.app.sendControl('tycoon_upgrade', { upgrade: key, level: item.level });
+    }
+
+    this.saveState();
+    this.renderSubtab();
+    this.updateUI();
+  }
+
+  buyModule(key) {
+    const item = this.modules[key];
+    if (!item || item.count >= item.maxCount) return;
+    const cost = this.getItemCost(item);
+    if (this.money < cost) return;
+
+    this.money -= cost;
+    item.count++;
+
+    if (window.plantAudio && typeof window.plantAudio.playUpgradePurchased === 'function') {
+      window.plantAudio.playUpgradePurchased();
+    }
+
+    this.saveState();
+    this.renderSubtab();
+    this.updateUI();
+  }
+
+  hireStaff(key) {
+    const item = this.staff[key];
+    if (!item || item.count >= item.maxCount) return;
+    const cost = this.getItemCost(item);
+    if (this.money < cost) return;
+
+    this.money -= cost;
+    item.count++;
+
+    if (window.plantAudio && typeof window.plantAudio.playUpgradePurchased === 'function') {
+      window.plantAudio.playUpgradePurchased();
+    }
+
+    this.saveState();
+    this.renderSubtab();
+    this.updateUI();
+  }
+
+  sellBattery() {
+    if (this.storedEnergyMWh <= 0.05) return;
+    const traderBonus = 1.0 + (this.staff.market_traders.count * 0.05);
+    const atfBonus = 1.0 + (this.upgrades.tolerant_fuel.level * 0.15);
+    const tariff = this.marketPriceMWh * traderBonus * atfBonus;
+    const boostMult = this.boostActive ? this.boostMultiplier : 1.0;
+    const prestigeMult = 1.0 + (this.prestigeBonusPct / 100.0);
+
+    const revenue = this.storedEnergyMWh * tariff * prestigeMult * boostMult;
+    this.money += revenue;
+    this.totalEarned += revenue;
+    const soldMWh = this.storedEnergyMWh;
+    this.storedEnergyMWh = 0.0;
+
+    if (window.plantAudio && typeof window.plantAudio.playCashChime === 'function') {
+      window.plantAudio.playCashChime();
+    }
+
+    const midX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500;
+    const midY = typeof window !== 'undefined' ? window.innerHeight / 2 : 400;
+    this.createFloatingText(`+${this.formatMoney(revenue)} (${soldMWh.toFixed(1)} МВт·ч)`, midX, midY);
+    this.updateUI();
+  }
+
+  claimPrestige() {
+    const req = 10000000.0;
+    if (this.money < req && this.totalEarned < req) return;
+
+    this.prestigeLevel++;
+    this.prestigeBonusPct += 50.0;
+    this.money = 500000.0;
+    this.storedEnergyMWh = 0.0;
+    this.boostCharge = 0.0;
+    this.boostActive = false;
+
+    Object.keys(this.upgrades).forEach(k => {
+      this.upgrades[k].level = (k === 'suz_automation' || k === 'tolerant_fuel') ? 0 : 1;
+    });
+    Object.keys(this.modules).forEach(k => {
+      this.modules[k].count = 0;
+    });
+    Object.keys(this.staff).forEach(k => {
+      this.staff[k].count = (k === 'market_traders' || k === 'chief_engineer') ? 0 : 1;
+    });
+
+    if (window.plantAudio && typeof window.plantAudio.playTriumphFanfare === 'function') {
+      window.plantAudio.playTriumphFanfare();
+    }
+
+    this.saveState();
+    this.renderSubtab();
+    this.updateUI();
+  }
+
+  saveState() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const data = {
+        money: this.money,
+        totalEarned: this.totalEarned,
+        storedEnergyMWh: this.storedEnergyMWh,
+        autoSellGrid: this.autoSellGrid,
+        prestigeLevel: this.prestigeLevel,
+        prestigeBonusPct: this.prestigeBonusPct,
+        upgrades: {},
+        modules: {},
+        staff: {},
+        savedAt: Date.now()
+      };
+      Object.keys(this.upgrades).forEach(k => { data.upgrades[k] = this.upgrades[k].level; });
+      Object.keys(this.modules).forEach(k => { data.modules[k] = this.modules[k].count; });
+      Object.keys(this.staff).forEach(k => { data.staff[k] = this.staff[k].count; });
+      localStorage.setItem('nuce_tycoon_save_v1', JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  loadState() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('nuce_tycoon_save_v1');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (typeof data.money === 'number') this.money = data.money;
+      if (typeof data.totalEarned === 'number') this.totalEarned = data.totalEarned;
+      if (typeof data.storedEnergyMWh === 'number') this.storedEnergyMWh = data.storedEnergyMWh;
+      if (typeof data.autoSellGrid === 'boolean') this.autoSellGrid = data.autoSellGrid;
+      if (typeof data.prestigeLevel === 'number') this.prestigeLevel = data.prestigeLevel;
+      if (typeof data.prestigeBonusPct === 'number') this.prestigeBonusPct = data.prestigeBonusPct;
+
+      if (data.upgrades) {
+        Object.keys(data.upgrades).forEach(k => {
+          if (this.upgrades[k] && typeof data.upgrades[k] === 'number') {
+            this.upgrades[k].level = data.upgrades[k];
+          }
+        });
+      }
+      if (data.modules) {
+        Object.keys(data.modules).forEach(k => {
+          if (this.modules[k] && typeof data.modules[k] === 'number') {
+            this.modules[k].count = data.modules[k];
+          }
+        });
+      }
+      if (data.staff) {
+        Object.keys(data.staff).forEach(k => {
+          if (this.staff[k] && typeof data.staff[k] === 'number') {
+            this.staff[k].count = data.staff[k];
+          }
+        });
+      }
+
+      if (data.savedAt) {
+        const elapsedSec = Math.min(8 * 3600, Math.max(0, (Date.now() - data.savedAt) / 1000));
+        if (elapsedSec > 10) {
+          let passiveSec = 0;
+          Object.values(this.modules).forEach(m => { passiveSec += m.count * m.incomePerSec; });
+          Object.values(this.staff).forEach(s => { passiveSec -= s.count * s.salaryPerSec; });
+          if (this.autoSellGrid !== false) {
+            passiveSec += (1000.0 / 3600.0) * this.marketPriceMWh * 0.5;
+          }
+          if (passiveSec > 0) {
+            const offlineEarnings = passiveSec * elapsedSec * (1.0 + this.prestigeBonusPct / 100.0);
+            this.money += offlineEarnings;
+            this.totalEarned += offlineEarnings;
+            console.log(`[Tycoon] Зачислено за время отсутствия (${Math.round(elapsedSec)} с): +${this.formatMoney(offlineEarnings)}`);
+            setTimeout(() => {
+              this.createFloatingText(`🏆 За время отсутствия: +${this.formatMoney(offlineEarnings)}`, typeof window !== 'undefined' ? window.innerWidth / 2 : 500, 160);
+            }, 1200);
+          }
+        }
+      }
+    } catch (e) {}
+
+    if (typeof window !== 'undefined' && window.location) {
+      const search = window.location.search || '';
+      const hash = window.location.hash || '';
+      if (search.includes('boost') || hash.includes('boost')) {
+        setTimeout(() => {
+          this.activateBoost(true);
+        }, 500);
+      }
+    }
+  }
+
+  initDomBindings() {
+    if (typeof document === 'undefined' || !document.getElementById) return;
+
+    const btnClick = document.getElementById('btnTycoonClick');
+    if (btnClick) {
+      btnClick.addEventListener('click', (e) => {
+        this.handleManualClick(e.clientX, e.clientY);
+      });
+    }
+
+    const btnBoost = document.getElementById('btnActivateBoost');
+    if (btnBoost) {
+      btnBoost.addEventListener('click', () => {
+        this.activateBoost();
+      });
+    }
+
+    const btnHeaderBoost = document.getElementById('btnHeaderBoost');
+    if (btnHeaderBoost) {
+      btnHeaderBoost.addEventListener('click', () => {
+        this.activateBoost(this.boostCharge >= 100.0);
+      });
+    }
+
+    const cmdInput = document.getElementById('tycoonCmdInput');
+    const cmdBtn = document.getElementById('btnTycoonCmdExec');
+    if (cmdInput && cmdBtn) {
+      const runCmd = () => {
+        const val = cmdInput.value;
+        if (val) this.executeCommand(val);
+      };
+      cmdBtn.addEventListener('click', runCmd);
+      cmdInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          runCmd();
+        }
+      });
+    }
+
+    const btnSellBat = document.getElementById('btnSellBattery');
+    if (btnSellBat) {
+      btnSellBat.addEventListener('click', () => {
+        this.sellBattery();
+      });
+    }
+
+    const btnAuto = document.getElementById('btnToggleAutoSell');
+    if (btnAuto) {
+      btnAuto.addEventListener('click', () => {
+        this.autoSellGrid = !this.autoSellGrid;
+        this.updateUI();
+      });
+    }
+
+    const btnPrestige = document.getElementById('btnTycoonPrestige');
+    if (btnPrestige) {
+      btnPrestige.addEventListener('click', () => {
+        this.claimPrestige();
+      });
+    }
+
+    // Подвкладки
+    const subtabs = [
+      { btnId: 'tycoonSubtabReactor', listId: 'tycoonReactorList', tab: 'reactor' },
+      { btnId: 'tycoonSubtabModules', listId: 'tycoonModulesList', tab: 'modules' },
+      { btnId: 'tycoonSubtabStaff', listId: 'tycoonStaffList', tab: 'staff' },
+      { btnId: 'tycoonSubtabMarket', listId: 'tycoonMarketList', tab: 'market' }
+    ];
+
+    subtabs.forEach(st => {
+      const b = document.getElementById(st.btnId);
+      if (b) {
+        b.addEventListener('click', () => {
+          if (window.plantAudio && typeof window.plantAudio.playSwitchClick === 'function') {
+            window.plantAudio.playSwitchClick();
+          }
+          subtabs.forEach(x => {
+            const elBtn = document.getElementById(x.btnId);
+            const elList = document.getElementById(x.listId);
+            if (elBtn) elBtn.classList.remove('active');
+            if (elList) elList.style.display = 'none';
+          });
+          b.classList.add('active');
+          const activeList = document.getElementById(st.listId);
+          if (activeList) activeList.style.display = (st.tab === 'market') ? 'block' : 'flex';
+          this.currentSubtab = st.tab;
+          this.renderSubtab();
+        });
+      }
+    });
+
+    // Делегирование кликов покупки
+    const bindBuyList = (listId, buyFn) => {
+      const el = document.getElementById(listId);
+      if (!el) return;
+      el.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-buy-key]');
+        if (btn) {
+          const key = btn.getAttribute('data-buy-key');
+          if (key) buyFn(key);
+        }
+      });
+    };
+
+    bindBuyList('tycoonReactorList', (k) => this.buyUpgrade(k));
+    bindBuyList('tycoonModulesList', (k) => this.buyModule(k));
+    bindBuyList('tycoonStaffList', (k) => this.hireStaff(k));
+
+    this.renderSubtab();
+    this.updateUI();
+  }
+
+  renderSubtab() {
+    if (typeof document === 'undefined') return;
+
+    if (this.currentSubtab === 'reactor') {
+      const container = document.getElementById('tycoonReactorList');
+      if (!container) return;
+      container.innerHTML = Object.values(this.upgrades).map(u => {
+        const cost = this.getItemCost(u);
+        const isMax = u.level >= u.maxLevel;
+        return `
+          <div class="tycoon-item-card">
+            <div class="item-card-left">
+              <div class="item-card-icon">${u.icon}</div>
+              <div class="item-card-details">
+                <div class="item-card-title-row">
+                  <span class="item-card-title">${u.name}</span>
+                  <span class="item-card-level-badge">УР. ${u.level}/${u.maxLevel}</span>
+                </div>
+                <span class="item-card-desc">${u.desc}</span>
+              </div>
+            </div>
+            <button class="item-card-buy-btn" data-buy-key="${u.id}" ${isMax || this.money < cost ? 'disabled' : ''}>
+              <span>${isMax ? 'МАКСИМУМ' : 'УЛУЧШИТЬ'}</span>
+              ${isMax ? '' : `<span class="buy-btn-price">${this.formatMoney(cost)}</span>`}
+            </button>
+          </div>
+        `;
+      }).join('');
+    } else if (this.currentSubtab === 'modules') {
+      const container = document.getElementById('tycoonModulesList');
+      if (!container) return;
+      container.innerHTML = Object.values(this.modules).map(m => {
+        const cost = this.getItemCost(m);
+        const isMax = m.count >= m.maxCount;
+        return `
+          <div class="tycoon-item-card">
+            <div class="item-card-left">
+              <div class="item-card-icon">${m.icon}</div>
+              <div class="item-card-details">
+                <div class="item-card-title-row">
+                  <span class="item-card-title">${m.name}</span>
+                  <span class="item-card-level-badge">ПОСТРОЕНО: ${m.count}/${m.maxCount}</span>
+                </div>
+                <span class="item-card-desc">${m.desc}</span>
+                <span class="item-card-bonus">+${this.formatMoney(m.incomePerSec)}/с за объект</span>
+              </div>
+            </div>
+            <button class="item-card-buy-btn" data-buy-key="${m.id}" ${isMax || this.money < cost ? 'disabled' : ''}>
+              <span>${isMax ? 'ПОСТРОЕНО' : 'ПОСТРОИТЬ'}</span>
+              ${isMax ? '' : `<span class="buy-btn-price">${this.formatMoney(cost)}</span>`}
+            </button>
+          </div>
+        `;
+      }).join('');
+    } else if (this.currentSubtab === 'staff') {
+      const container = document.getElementById('tycoonStaffList');
+      if (!container) return;
+      container.innerHTML = Object.values(this.staff).map(s => {
+        const cost = this.getItemCost(s);
+        const isMax = s.count >= s.maxCount;
+        return `
+          <div class="tycoon-item-card">
+            <div class="item-card-left">
+              <div class="item-card-icon">${s.icon}</div>
+              <div class="item-card-details">
+                <div class="item-card-title-row">
+                  <span class="item-card-title">${s.name}</span>
+                  <span class="item-card-level-badge">ШТАТ: ${s.count}/${s.maxCount}</span>
+                </div>
+                <span class="item-card-desc">${s.desc}</span>
+                <span class="item-card-bonus">Зарплата: ${this.formatMoney(s.salaryPerSec)}/с</span>
+              </div>
+            </div>
+            <button class="item-card-buy-btn" data-buy-key="${s.id}" ${isMax || this.money < cost ? 'disabled' : ''}>
+              <span>${isMax ? 'ШТАТ ПОЛОН' : 'НАНЯТЬ'}</span>
+              ${isMax ? '' : `<span class="buy-btn-price">${this.formatMoney(cost)}</span>`}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  updateUI() {
+    if (typeof document === 'undefined' || !document.getElementById) return;
+
+    // Баланс и доход в шапке
+    const elMoney = document.getElementById('tycoonMoney');
+    if (elMoney) elMoney.textContent = this.formatMoney(this.money);
+
+    const elIncome = document.getElementById('tycoonIncome');
+    if (elIncome) {
+      const sign = this.currentNetIncomePerSec >= 0 ? '+' : '';
+      elIncome.textContent = `${sign}${this.formatMoney(this.currentNetIncomePerSec)}/с`;
+    }
+
+    // Тариф ОРЭМ
+    const elTariff = document.getElementById('marketTariffVal');
+    if (elTariff) elTariff.textContent = `${Math.round(this.marketPriceMWh).toLocaleString('ru-RU')} ₽/МВт·ч`;
+
+    const elTrend = document.getElementById('marketTrendIcon');
+    if (elTrend) {
+      elTrend.textContent = this.marketTrend > 0 ? '▲' : '▼';
+      elTrend.className = this.marketTrend > 0 ? 'market-trend-up' : 'market-trend-down';
+    }
+
+    // Буст бар и кнопки
+    const elBoostFill = document.getElementById('boostMeterFill');
+    if (elBoostFill && elBoostFill.style) {
+      const pct = Math.min(100, Math.max(0, Math.round(this.boostCharge)));
+      elBoostFill.style.width = `${pct}%`;
+      elBoostFill.className = (pct >= 100 || this.boostActive) ? 'boost-meter-fill full' : 'boost-meter-fill';
+    }
+
+    const elBoostText = document.getElementById('boostMeterText');
+    if (elBoostText) {
+      if (this.boostActive) {
+        elBoostText.textContent = `🔥 ТУРБО-БУСТ АКТИВЕН! ОСТАЛОСЬ ${Math.ceil(this.boostTimer)} СЕК (3.0x)`;
+      } else if (this.boostCharge >= 100.0) {
+        elBoostText.textContent = `⚡ ТУРБО-БУСТ ГОТОВ! НАЖМИТЕ ДЛЯ ЗАПУСКА`;
+      } else {
+        elBoostText.textContent = `ТУРБО-БУСТ: ${Math.round(this.boostCharge)}% [ЗАРЯДКА КЛИКАМИ]`;
+      }
+    }
+
+    const elBtnBoost = document.getElementById('btnActivateBoost');
+    if (elBtnBoost) {
+      if (this.boostActive) {
+        elBtnBoost.className = 'btn-activate-boost active';
+      } else if (this.boostCharge >= 100.0) {
+        elBtnBoost.className = 'btn-activate-boost ready';
+      } else {
+        elBtnBoost.className = 'btn-activate-boost';
+      }
+    }
+
+    const elHeaderBoost = document.getElementById('btnHeaderBoost');
+    const elHeaderBoostLbl = document.getElementById('boostBtnLabel');
+    if (elHeaderBoost) {
+      if (this.boostActive) {
+        elHeaderBoost.className = 'btn-ctrl btn-boost-header active';
+        if (elHeaderBoostLbl) elHeaderBoostLbl.textContent = `🔥 БУСТ ${Math.ceil(this.boostTimer)}с`;
+      } else if (this.boostCharge >= 100.0) {
+        elHeaderBoost.className = 'btn-ctrl btn-boost-header ready';
+        if (elHeaderBoostLbl) elHeaderBoostLbl.textContent = `⚡ БУСТ 100%`;
+      } else {
+        elHeaderBoost.className = 'btn-ctrl btn-boost-header';
+        if (elHeaderBoostLbl) elHeaderBoostLbl.textContent = `⚡ БУСТ ${Math.round(this.boostCharge)}%`;
+      }
+    }
+
+    // Батарея
+    const elBat = document.getElementById('batteryStorageVal');
+    if (elBat) {
+      elBat.textContent = `${this.storedEnergyMWh.toFixed(1)} / ${this.maxEnergyStorageMWh.toFixed(1)} МВт·ч`;
+    }
+
+    const elAuto = document.getElementById('autoSellStatus');
+    if (elAuto) {
+      elAuto.textContent = `АВТОПРОДАЖА: ${this.autoSellGrid ? 'ВКЛ' : 'ВЫКЛ'}`;
+    }
+    const btnAuto = document.getElementById('btnToggleAutoSell');
+    if (btnAuto) {
+      btnAuto.className = this.autoSellGrid ? 'btn-toggle-autosell active' : 'btn-toggle-autosell';
+    }
+
+    // Престиж
+    const elPrestBonus = document.getElementById('prestigeBonusVal');
+    if (elPrestBonus) elPrestBonus.textContent = `+${this.prestigeBonusPct}%`;
+
+    const elPrestReq = document.getElementById('prestigeReqVal');
+    if (elPrestReq) elPrestReq.textContent = `10 000 000 ₽`;
+
+    const btnPrestige = document.getElementById('btnTycoonPrestige');
+    if (btnPrestige) {
+      btnPrestige.disabled = (this.money < 10000000.0 && this.totalEarned < 10000000.0);
+    }
+
+    // Обновление состояния доступности кнопок покупки в активной подвкладке
+    const activeListId = this.currentSubtab === 'reactor' ? 'tycoonReactorList'
+      : (this.currentSubtab === 'modules' ? 'tycoonModulesList' : (this.currentSubtab === 'staff' ? 'tycoonStaffList' : null));
+    if (activeListId) {
+      const container = document.getElementById(activeListId);
+      if (container && typeof container.querySelectorAll === 'function') {
+        const buttons = container.querySelectorAll('[data-buy-key]');
+        buttons.forEach(btn => {
+          const key = btn.getAttribute('data-buy-key');
+          const item = this.upgrades[key] || this.modules[key] || this.staff[key];
+          if (item) {
+            const cost = this.getItemCost(item);
+            const current = (item.level !== undefined) ? item.level : item.count;
+            const isMax = current >= (item.maxLevel || item.maxCount);
+            btn.disabled = isMax || (this.money < cost);
+          }
+        });
+      }
+    }
+  }
+}
+
+// Глобальная поддержка команды /boost в консоли браузера
+if (typeof window !== 'undefined') {
+  window.boost = function() {
+    if (window.scadaApp && window.scadaApp.tycoon) {
+      return window.scadaApp.tycoon.activateBoost(true);
+    }
+    return 'SCADA App не инициализирован';
+  };
+  window['/boost'] = window.boost;
+  window['turbo'] = window.boost;
+}
+
+/**
  * Главный контроллер SCADA-интерфейса энергоблока АЭС ВВЭР-1000
  * Управление пультом оператора, телеметрией, стрелочными приборами,
  * поворотными переключателями ПМО, светосигнальным табло и акустикой.
@@ -20,6 +1035,8 @@ class ScadaApp {
     this.shatteredGlassEl = null;
     this.gameOverModalEl = null;
     this.btnRestartGame = null;
+
+    this.tycoon = new PlantTycoon(this);
 
     this.fetchInitialState();
     this.initWebSocket();
@@ -53,6 +1070,13 @@ class ScadaApp {
       if (badge) {
         badge.textContent = 'ONLINE';
         badge.className = 'status-badge on';
+      }
+      if (this.tycoon && this.tycoon.upgrades) {
+        Object.entries(this.tycoon.upgrades).forEach(([k, u]) => {
+          if (u.level > 1) {
+            this.sendControl('tycoon_upgrade', { upgrade: k, level: u.level });
+          }
+        });
       }
     };
 
@@ -96,6 +1120,7 @@ class ScadaApp {
 
   onTelemetryReceived(data) {
     if (!data || typeof data !== 'object') return;
+    if (this.tycoon) this.tycoon.onTelemetry(data);
 
     // Звуковая реакция на изменение состояния энергоблока
     try {
@@ -1051,6 +2076,24 @@ class ScadaApp {
           this.returnFromInspection();
         }
       }
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) {
+        return;
+      }
+      if (e.key === '/') {
+        e.preventDefault();
+        const tabBtn = document.getElementById('btnTabTycoon');
+        if (tabBtn) tabBtn.click();
+        const cmdInput = document.getElementById('tycoonCmdInput');
+        if (cmdInput) {
+          cmdInput.focus();
+          cmdInput.value = '/';
+        }
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        if (this.tycoon) this.tycoon.activateBoost(true);
+      } else if (e.key === 'b' || e.key === 'B') {
+        if (this.tycoon) this.tycoon.activateBoost(true);
+      }
     });
 
     // Глобальная блокировка сломанных кнопок при катастрофе
@@ -1273,6 +2316,12 @@ class ScadaApp {
     setTimeout(() => {
       el.style.boxShadow = '';
     }, 140);
+  }
+
+  handleReactorCoreClick(clientX, clientY) {
+    if (this.tycoon) {
+      this.tycoon.handleManualClick(clientX, clientY);
+    }
   }
 
 }

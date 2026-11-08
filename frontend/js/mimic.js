@@ -2973,6 +2973,9 @@ class PlantMimic {
           if (d <= asm.r) {
             this.selectedAssemblyId = asm.id;
             if (window.plantAudio) window.plantAudio.playSwitchClick();
+            if (window.scadaApp && window.scadaApp.tycoon) {
+              window.scadaApp.tycoon.handleManualClick(e.clientX, e.clientY);
+            }
             return;
           }
         }
@@ -2993,21 +2996,6 @@ class PlantMimic {
         const halfH = (rcp.h || 48) / 2;
         const inRect = Math.abs(sx - rcp.x) <= halfW && Math.abs(sy - rcp.y) <= halfH;
         if (inRect || Math.hypot(sx - rcp.x, sy - rcp.y) < (rcp.r || 28)) {
-          if (window.scadaApp) {
-            if (window.plantAudio) window.plantAudio.playPmoRotate();
-            window.scadaApp.sendControl('toggle_rcp', rcp.index);
-          }
-          return;
-        }
-      }
-    }
-    if (this.renderedRcps && this.renderedRcps.length > 0) {
-      for (let i = 0; i < this.renderedRcps.length; i++) {
-        const rcp = this.renderedRcps[i];
-        const halfW = (rcp.w || 82) / 2;
-        const halfH = (rcp.h || 48) / 2;
-        const inRect = Math.abs(x - rcp.x) <= halfW && Math.abs(y - rcp.y) <= halfH;
-        if (inRect || Math.hypot(x - rcp.x, y - rcp.y) < (rcp.r || 28)) {
           if (window.scadaApp) {
             if (window.plantAudio) window.plantAudio.playPmoRotate();
             window.scadaApp.sendControl('toggle_rcp', rcp.index);
@@ -3047,6 +3035,14 @@ class PlantMimic {
         if (window.plantAudio) window.plantAudio.playSwitchClick();
         const isOpen = (this.state && typeof this.state.turbine_rpm === 'number') ? this.state.turbine_rpm > 100 : true;
         window.scadaApp.sendControl(isOpen ? 'turbine_trip' : 'turbine_reset');
+      }
+      return;
+    }
+
+    // Клик по корпусу или активной зоне реактора ВВЭР-1000: выработка энергии (кликер)
+    if (Math.abs(sx - rx) <= rw * 0.7 && Math.abs(sy - ry) <= rh * 0.6) {
+      if (window.scadaApp && window.scadaApp.tycoon) {
+        window.scadaApp.tycoon.handleManualClick(e.clientX, e.clientY);
       }
       return;
     }

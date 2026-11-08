@@ -74,10 +74,23 @@
         <span class="metric-label">РЕЙТИНГ</span>
         <div class="vfd-tube"><span id="m_operator_score" class="metric-val vfd-text score-text">100% [A+]</span></div>
       </div>
+      <!-- ТАЙКУН: БАЛАНС И ТЕКУЩИЙ ДОХОД -->
+      <div class="metric-pill tycoon-box" title="Капитал энергохолдинга (₽) — выработка и сбыт электроэнергии">
+        <span class="metric-label">БАЛАНС [₽]</span>
+        <div class="vfd-tube tycoon-tube"><span id="tycoonMoney" class="metric-val vfd-text money-text">500 000 ₽</span></div>
+      </div>
+      <div class="metric-pill tycoon-box" title="Чистый доход от генерации и модулей в секунду">
+        <span class="metric-label">ДОХОД / СЕК</span>
+        <div class="vfd-tube"><span id="tycoonIncome" class="metric-val vfd-text income-text">+1 250 ₽/с</span></div>
+      </div>
     </div>
 
     <!-- КНОПКИ И ТУМБЛЕРЫ УПРАВЛЕНИЯ ВРЕМЕНЕМ (100% НЕПРОЗРАЧНЫЕ) -->
     <div class="header-actions">
+      <button id="btnHeaderBoost" class="btn-ctrl btn-boost-header" title="⚡ Активировать режим Турбо-Буста (/boost) — 3x выработка и продажа!">
+        <span class="btn-indicator-jewel boost-jewel"></span>
+        <span id="boostBtnLabel" class="btn-caption">⚡ БУСТ 0%</span>
+      </button>
       <button id="btnSound" class="btn-ctrl active" title="Включить / выключить акустику пульта">
         <span class="btn-indicator-jewel"></span>
         <span class="btn-caption">🔊 ЗВУК</span>
@@ -139,68 +152,6 @@
           <div class="crt-scanlines"></div>
           <div class="crt-glare-reflection"></div>
           <div class="crt-phosphor-glow"></div>
-
-          <!-- Слой разбитого стекла кинескопа ЭЛТ при взрыве реактора -->
-          <div id="crtShatteredGlass" class="crt-shattered-glass">
-            <svg class="cracks-svg" viewBox="0 0 1000 650" preserveAspectRatio="none">
-              <defs>
-                <filter id="glassGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="1.5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <g class="cracks-lines" filter="url(#glassGlow)">
-                <!-- Эпицентр гидроударного разрушения (координаты купола реактора) -->
-                <circle cx="210" cy="240" r="16" class="crack-core" />
-                <circle cx="210" cy="240" r="38" class="crack-ring" />
-                <circle cx="210" cy="240" r="75" class="crack-ring" />
-                <circle cx="210" cy="240" r="130" class="crack-ring" />
-                <circle cx="210" cy="240" r="210" class="crack-ring" />
-                <circle cx="210" cy="240" r="320" class="crack-ring" />
-                <circle cx="210" cy="240" r="480" class="crack-ring" />
-                <circle cx="210" cy="240" r="680" class="crack-ring" />
-
-                <!-- Магистральные радиальные трещины с изломами -->
-                <path d="M210,240 L160,140 L110,70 L50,20 L0,0" class="crack-major" />
-                <path d="M210,240 L240,110 L270,40 L290,0" class="crack-major" />
-                <path d="M210,240 L360,130 L520,70 L720,25 L880,0" class="crack-major" />
-                <path d="M210,240 L410,210 L640,180 L820,150 L1000,120" class="crack-major" />
-                <path d="M210,240 L440,280 L680,310 L870,350 L1000,380" class="crack-major" />
-                <path d="M210,240 L400,370 L620,470 L830,560 L1000,620" class="crack-major" />
-                <path d="M210,240 L310,410 L440,540 L540,650" class="crack-major" />
-                <path d="M210,240 L230,420 L240,550 L250,650" class="crack-major" />
-                <path d="M210,240 L160,400 L110,530 L70,650" class="crack-major" />
-                <path d="M210,240 L90,360 L30,460 L0,510" class="crack-major" />
-                <path d="M210,240 L60,280 L20,310 L0,320" class="crack-major" />
-                <path d="M210,240 L40,210 L0,200" class="crack-major" />
-                <path d="M210,240 L70,150 L20,110 L0,90" class="crack-major" />
-
-                <!-- Разветвленные вторичные паутинные расколы -->
-                <path d="M160,140 L210,120 L270,160 L310,120" class="crack-branch" />
-                <path d="M110,70 L170,50 L240,70" class="crack-branch" />
-                <path d="M360,130 L430,90 L480,140 L550,110" class="crack-branch" />
-                <path d="M410,210 L480,170 L560,220 L640,180" class="crack-branch" />
-                <path d="M440,280 L520,330 L590,290 L670,340" class="crack-branch" />
-                <path d="M400,370 L480,420 L570,390 L650,450" class="crack-branch" />
-                <path d="M310,410 L370,480 L440,460 L500,530" class="crack-branch" />
-                <path d="M160,400 L210,470 L260,450 L310,520" class="crack-branch" />
-                <path d="M90,360 L140,430 L180,480" class="crack-branch" />
-                <path d="M60,280 L110,320 L150,290" class="crack-branch" />
-                <path d="M70,150 L120,200 L160,180" class="crack-branch" />
-
-                <!-- Сколы и выбитые сектора свинцового стекла (черные дыры кинескопа) -->
-                <polygon points="195,225 225,215 235,245 205,255" class="crack-hole" />
-                <polygon points="215,205 245,190 260,220 228,230" class="crack-hole" />
-                <polygon points="175,240 195,268 170,280 155,252" class="crack-hole" />
-                <polygon points="225,250 250,270 230,285 210,265" class="crack-hole" />
-              </g>
-            </svg>
-            <div class="glass-glare-shatter"></div>
-            <div class="glass-dust-particles"></div>
-          </div>
         </div>
       </div>
     </section>
@@ -228,6 +179,10 @@
         <button class="tab-btn" data-tab="mission">
           <span class="tab-indicator"></span>
           <span>РЕГЛАМЕНТ</span>
+        </button>
+        <button class="tab-btn tycoon-tab-btn" data-tab="tycoon" id="btnTabTycoon" title="Экономика АЭС: выработка, сбыт электроэнергии, модули и кадры">
+          <span class="tab-indicator tycoon-indicator"></span>
+          <span>💰 ТАЙКУН / РЫНОК</span>
         </button>
       </nav>
 
@@ -1006,6 +961,133 @@
         </div>
       </div>
 
+      <!-- ВКЛАДКА 6: ЯДЕРНЫЙ ТАЙКУН, КЛИКЕР И ПРОКАЧКА ЭНЕРГОБЛОКА -->
+      <div id="tab_tycoon" class="tab-content tycoon-tab-pane">
+        <!-- ГЛАВНАЯ ПАНЕЛЬ КЛИКЕРА И ТУРБО-БУСТА -->
+        <div class="console-card tycoon-hero-card">
+          <div class="panel-screw screw-tl"></div>
+          <div class="panel-screw screw-tr"></div>
+          <div class="panel-screw screw-bl"></div>
+          <div class="panel-screw screw-br"></div>
+
+          <div class="tycoon-hero-header">
+            <div class="hero-title-group">
+              <span class="tycoon-tag-badge">ОПТОВЫЙ РЫНОК ЭЛЕКТРОЭНЕРГИИ И МОЩНОСТИ (ОРЭМ)</span>
+              <h3 class="tycoon-hero-title">СБЫТ ЭНЕРГИИ И УПРАВЛЕНИЕ КАПИТАЛОМ</h3>
+            </div>
+            <div class="market-rate-badge" title="Текущий биржевой тариф продажи 1 МВт·ч в Единую энергосистему">
+              <span class="market-rate-lbl">ТАРИФ ОРЭМ:</span>
+              <span id="marketTariffVal" class="market-rate-num">4 500 ₽/МВт·ч</span>
+              <span id="marketTrendIcon" class="market-trend-up">▲</span>
+            </div>
+          </div>
+
+          <!-- КОМАНДНАЯ СТРОКА ТАЙКУНА: ВВОД /BOOST И СИСТЕМНЫХ КОМАНД -->
+          <div class="tycoon-cmd-bar">
+            <span class="cmd-prompt-label">КОНСОЛЬ АЭС:&gt;</span>
+            <input type="text" id="tycoonCmdInput" class="tycoon-cmd-input" placeholder="Введите команду /boost, /money, /sell, /help (или нажмите клавишу '/')..." autocomplete="off" spellcheck="false" />
+            <button id="btnTycoonCmdExec" class="btn-cmd-exec" title="Выполнить команду консоли">
+              <span>▶ ВЫПОЛНИТЬ</span>
+            </button>
+          </div>
+
+          <!-- БОЛЬШАЯ ИНТЕРАКТИВНАЯ КНОПКА-КЛИКЕР ВЫРАБОТКИ -->
+          <div class="tycoon-clicker-area">
+            <button id="btnTycoonClick" class="btn-reactor-pulse" title="Нажмите для выработки дополнительного импульса мощности и мгновенной продажи в сеть (также работает клик по реактору на мнемосхеме!)">
+              <div class="reactor-pulse-core">
+                <span class="pulse-icon">⚡</span>
+                <span class="pulse-caption">ВЫРАБОТКА ЭНЕРГИИ [КЛИК]</span>
+                <span class="pulse-sub">+50 000 ₽ • Импульс мощности в сеть</span>
+              </div>
+              <div class="pulse-rings-fx"></div>
+            </button>
+          </div>
+
+          <!-- ШКАЛА И КНОПКА ТУРБО-БУСТА (/BOOST) -->
+          <div class="tycoon-boost-container">
+            <div class="boost-meter-header">
+              <span id="boostMeterText" class="boost-status-lbl">ТУРБО-БУСТ: 0% [ЗАРЯДКА КЛИКАМИ И ГЕНЕРАЦИЕЙ]</span>
+              <span class="boost-mult-badge">РЕЖИМ: 3.0x ДОХОД</span>
+            </div>
+            <div class="boost-meter-track">
+              <div id="boostMeterFill" class="boost-meter-fill" style="width: 0%;"></div>
+            </div>
+            <button id="btnActivateBoost" class="btn-activate-boost" title="Запустите турбо-перегрузку на 15 секунд — утраивает весь доход и скорость кликов! (или клавиша Пробел)">
+              <span class="boost-flame-icon">🔥</span>
+              <span>ВКЛЮЧИТЬ ТУРБО-БУСТ (/BOOST)</span>
+            </button>
+          </div>
+
+          <!-- БАТАРЕЙНЫЕ НАКОПИТЕЛИ И ПЕРЕКЛЮЧАТЕЛЬ АВТОПРОДАЖИ -->
+          <div class="tycoon-storage-bar">
+            <div class="storage-info">
+              <span class="storage-lbl">РЕЗЕРВ В АККУМУЛЯТОРАХ:</span>
+              <span id="batteryStorageVal" class="storage-val">0.0 / 50.0 МВт·ч</span>
+            </div>
+            <div class="storage-actions">
+              <button id="btnSellBattery" class="btn-sell-battery" title="Мгновенно сбросить всю накопленную в батареях энергию на биржу по текущему тарифу">
+                <span>ПРОДАТЬ ИЗ БАТАРЕЙ</span>
+              </button>
+              <button id="btnToggleAutoSell" class="btn-toggle-autosell" title="Автоматическая непрерывная продажа всей вырабатываемой мощности генератора прямо в сеть">
+                <span id="autoSellStatus">АВТОПРОДАЖА: ВКЛ</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- НАВИГАЦИЯ ПО КАТЕГОРИЯМ РАЗВИТИЯ -->
+        <div class="tycoon-subtabs-nav">
+          <button id="tycoonSubtabReactor" class="tycoon-subtab-btn active">⚛️ ПРОКАЧКА РЕАКТОРА</button>
+          <button id="tycoonSubtabModules" class="tycoon-subtab-btn">🏢 МОДУЛИ АЭС</button>
+          <button id="tycoonSubtabStaff" class="tycoon-subtab-btn">👷 ПЕРСОНАЛ</button>
+          <button id="tycoonSubtabMarket" class="tycoon-subtab-btn">📈 ИНВЕСТИЦИИ И ПРЕСТИЖ</button>
+        </div>
+
+        <!-- КАТЕГОРИЯ 1: ПРОКАЧКА РЕАКТОРА -->
+        <div id="tycoonReactorList" class="tycoon-items-grid"></div>
+
+        <!-- КАТЕГОРИЯ 2: МОДУЛИ АЭС -->
+        <div id="tycoonModulesList" class="tycoon-items-grid" style="display: none;"></div>
+
+        <!-- КАТЕГОРИЯ 3: НАЕМ ПЕРСОНАЛА -->
+        <div id="tycoonStaffList" class="tycoon-items-grid" style="display: none;"></div>
+
+        <!-- КАТЕГОРИЯ 4: ИНВЕСТИЦИИ И ПРЕСТИЖ -->
+        <div id="tycoonMarketList" class="tycoon-market-view" style="display: none;">
+          <div class="console-card prestige-card">
+            <div class="panel-screw screw-tl"></div>
+            <div class="panel-screw screw-tr"></div>
+            <div class="panel-screw screw-bl"></div>
+            <div class="panel-screw screw-br"></div>
+
+            <div class="card-title">
+              <span>ГОСУДАРСТВЕННЫЙ КОНЦЕРН «РОСАТОМ» • ИНВЕСТИЦИОННЫЙ ГРАНТ</span>
+              <span class="plate-badge">ПРЕСТИЖ</span>
+            </div>
+
+            <p class="prestige-lead">
+              Сдайте действующий энергоблок Госкомиссии и получите целевой Федеральный Грант на масштабную модернизацию АЭС.
+              Все текущие средства будут конвертированы в постоянный мультипликатор престижа (+50% к доходу навсегда)!
+            </p>
+
+            <div class="prestige-stats-row">
+              <div class="prestige-stat-box">
+                <span class="stat-lbl">ТЕКУЩИЙ БОНУС ПРЕСТИЖА:</span>
+                <span id="prestigeBonusVal" class="stat-val">+0%</span>
+              </div>
+              <div class="prestige-stat-box">
+                <span class="stat-lbl">ТРЕБУЕТСЯ ДЛЯ ГРАНТА:</span>
+                <span id="prestigeReqVal" class="stat-val">10 000 000 ₽</span>
+              </div>
+            </div>
+
+            <button id="btnTycoonPrestige" class="btn-prestige" title="Сбросить текущий баланс и получить постоянный бонус +50% ко всем будущим доходам">
+              <span>🏛️ ПОЛУЧИТЬ ФЕДЕРАЛЬНЫЙ ГРАНТ (+50% БОНУС)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
     </aside>
   </main>
 
@@ -1345,6 +1427,84 @@
 
     </div>
   </footer>
+
+  <!-- СЛОЙ РАЗБИТОГО СТЕКЛА НА ВЕСЬ ЭКРАН ПРИ ВЗРЫВЕ / КАТАСТРОФЕ -->
+  <div id="crtShatteredGlass" class="crt-shattered-glass">
+    <svg class="cracks-svg" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+      <defs>
+        <filter id="glassGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <g class="cracks-lines" filter="url(#glassGlow)">
+        <!-- Эпицентр гидроударного разрушения (координаты купола реактора) -->
+        <circle cx="480" cy="520" r="24" class="crack-core" />
+        <circle cx="480" cy="520" r="55" class="crack-ring" />
+        <circle cx="480" cy="520" r="110" class="crack-ring" />
+        <circle cx="480" cy="520" r="190" class="crack-ring" />
+        <circle cx="480" cy="520" r="300" class="crack-ring" />
+        <circle cx="480" cy="520" r="450" class="crack-ring" />
+        <circle cx="480" cy="520" r="680" class="crack-ring" />
+        <circle cx="480" cy="520" r="980" class="crack-ring" />
+        <circle cx="480" cy="520" r="1380" class="crack-ring" />
+        <circle cx="480" cy="520" r="1850" class="crack-ring" />
+
+        <!-- Магистральные радиальные трещины через весь экран (1920x1080) -->
+        <path d="M480,520 L350,340 L220,180 L100,60 L0,0" class="crack-major" />
+        <path d="M480,520 L440,300 L410,130 L380,0" class="crack-major" />
+        <path d="M480,520 L580,310 L700,160 L780,0" class="crack-major" />
+        <path d="M480,520 L760,320 L1080,180 L1360,70 L1520,0" class="crack-major" />
+        <path d="M480,520 L920,350 L1360,220 L1680,100 L1920,0" class="crack-major" />
+        <path d="M480,520 L980,440 L1420,400 L1720,360 L1920,340" class="crack-major" />
+        <path d="M480,520 L1020,520 L1460,530 L1760,540 L1920,540" class="crack-major" />
+        <path d="M480,520 L980,620 L1400,710 L1720,790 L1920,840" class="crack-major" />
+        <path d="M480,520 L900,680 L1280,830 L1640,960 L1920,1080" class="crack-major" />
+        <path d="M480,520 L780,720 L1040,880 L1280,1000 L1400,1080" class="crack-major" />
+        <path d="M480,520 L620,710 L740,880 L840,1000 L900,1080" class="crack-major" />
+        <path d="M480,520 L480,720 L480,870 L480,1000 L480,1080" class="crack-major" />
+        <path d="M480,520 L340,680 L230,840 L140,980 L80,1080" class="crack-major" />
+        <path d="M480,520 L240,640 L110,800 L30,950 L0,1080" class="crack-major" />
+        <path d="M480,520 L210,570 L90,650 L20,720 L0,760" class="crack-major" />
+        <path d="M480,520 L180,520 L80,520 L0,520" class="crack-major" />
+        <path d="M480,520 L220,410 L100,320 L30,250 L0,220" class="crack-major" />
+        <path d="M480,520 L260,300 L140,180 L50,90 L0,30" class="crack-major" />
+
+        <!-- Разветвленные вторичные паутинные расколы -->
+        <path d="M350,340 L440,300 L580,310 L760,320" class="crack-branch" />
+        <path d="M220,180 L410,130 L700,160 L1080,180" class="crack-branch" />
+        <path d="M760,320 L920,350 L980,440 L1020,520" class="crack-branch" />
+        <path d="M1020,520 L980,620 L900,680 L780,720" class="crack-branch" />
+        <path d="M780,720 L620,710 L480,720 L340,680" class="crack-branch" />
+        <path d="M340,680 L240,640 L210,570 L180,520" class="crack-branch" />
+        <path d="M180,520 L220,410 L260,300 L350,340" class="crack-branch" />
+        <path d="M1360,220 L1420,400 L1460,530 L1400,710" class="crack-branch" />
+        <path d="M1400,710 L1280,830 L1040,880 L740,880" class="crack-branch" />
+        <path d="M740,880 L480,870 L230,840 L110,800" class="crack-branch" />
+        <path d="M110,800 L90,650 L80,520 L100,320" class="crack-branch" />
+        <path d="M100,320 L140,180 L220,180" class="crack-branch" />
+        <path d="M1680,100 L1720,360 L1760,540 L1720,790" class="crack-branch" />
+        <path d="M1720,790 L1640,960 L1280,1000 L840,1000" class="crack-branch" />
+        <path d="M840,1000 L480,1000 L140,980 L30,950" class="crack-branch" />
+        <path d="M1360,70 L1680,100" class="crack-branch" />
+        <path d="M920,350 L1150,280 L1360,220" class="crack-branch" />
+        <path d="M980,440 L1200,420 L1420,400" class="crack-branch" />
+        <path d="M980,620 L1180,660 L1400,710" class="crack-branch" />
+        <path d="M900,680 L1090,750 L1280,830" class="crack-branch" />
+
+        <!-- Прозрачные граненые осколки стекла (БЕЗ черных квадратов) -->
+        <polygon points="460,500 500,490 515,530 475,540" class="crack-hole" />
+        <polygon points="490,480 530,460 550,500 510,515" class="crack-hole" />
+        <polygon points="435,520 465,555 430,575 410,535" class="crack-hole" />
+        <polygon points="505,535 540,560 515,580 485,555" class="crack-hole" />
+      </g>
+    </svg>
+    <div class="glass-glare-shatter"></div>
+    <div class="glass-dust-particles"></div>
+  </div>
 
   <!-- ПЛАВАЮЩИЙ ИНСПЕКЦИОННЫЙ HUD ПРИ ОСМОТРЕ ПУЛЬТА БЩУ -->
   <div id="inspectHudBar" class="inspect-hud-bar" style="display: none;">

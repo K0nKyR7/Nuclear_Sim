@@ -56,6 +56,7 @@ class ThermalHydraulicsModel:
         self.containment_spray_active = False # Спринклерная система ГО (снижение давления и подавление радиоактивности)
         self.emergency_boron_active = False   # Аварийный впрыск бора высокого давления
         self.total_energy_mwh = 0.0           # Суммарная выработанная электроэнергия (МВт·ч)
+        self.turbine_efficiency_mult: float = 1.0 # Модификатор электрического КПД турбогенератора (тайкун)
 
     def trigger_explosion(self, exp_type: str) -> None:
         self.explosion_active = True
@@ -225,14 +226,17 @@ class ThermalHydraulicsModel:
             secondary.turbine_rpm += (0.0 - secondary.turbine_rpm) * (dt / 30.0)
         else:
             # Нормальная работа турбины
+            eff_mult = getattr(self, "turbine_efficiency_mult", 1.0)
+            target_p = controls.target_power_mw * eff_mult
             if controls.auto_power_controller:
-                # Регулятор мощности поддерживает target_power_mw
-                power_err = controls.target_power_mw - secondary.electric_power_mw
+                # Регулятор мощности поддерживает целевую мощность с учетом КПД генератора
+                power_err = target_p - secondary.electric_power_mw
                 secondary.turbine_valves_pct += power_err * 0.02 * dt
                 secondary.turbine_valves_pct = max(0.0, min(100.0, secondary.turbine_valves_pct))
 
             turbine_flow = (secondary.turbine_valves_pct / 100.0) * self.nominal_steam_flow * (sg.steam_pressure_mpa / self.nominal_p2_mpa)
-            secondary.electric_power_mw += ((turbine_flow / self.nominal_steam_flow) * self.nominal_electric_mw - secondary.electric_power_mw) * (dt / 2.0)
+            target_mw = (turbine_flow / self.nominal_steam_flow) * self.nominal_electric_mw * eff_mult
+            secondary.electric_power_mw += (target_mw - secondary.electric_power_mw) * (dt / 2.0)
             secondary.turbine_rpm = 3000.0
 
         # Сбросные клапаны БРУ-К (в конденсатор) и БРУ-А (в атмосферу)

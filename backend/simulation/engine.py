@@ -151,6 +151,11 @@ class SimulationEngine:
         self.finale_type: str = ""
         self.finale_data: Optional[Dict[str, Any]] = None
 
+        # Тайкун и экономические модификаторы реактора
+        self.tycoon_upgrades: Dict[str, int] = {}
+        self.tycoon_boost_active: bool = False
+        self.tycoon_boost_timer: float = 0.0
+
     def reset(self) -> None:
         """Сброс к исходному номинальному состоянию 100% мощности."""
         self.__init__()
@@ -524,6 +529,28 @@ class SimulationEngine:
             self.set_mission(str(value))
         elif command == "end_shift":
             self.evaluate_shift_and_trigger_finale(manual=True)
+        elif command == "tycoon_upgrade":
+            if isinstance(value, dict):
+                upg = value.get("upgrade")
+                lvl = int(value.get("level", 1))
+                if upg:
+                    old_lvl = self.tycoon_upgrades.get(str(upg), 1)
+                    self.tycoon_upgrades[str(upg)] = lvl
+                    if upg == "turbine_generator":
+                        mult = 1.0 + (lvl - 1) * 0.03
+                        self.thermal_model.turbine_efficiency_mult = mult
+                        if not self.safety.scrammed and old_lvl != lvl:
+                            old_mult = 1.0 + (old_lvl - 1) * 0.03
+                            self.secondary_state.electric_power_mw = (self.secondary_state.electric_power_mw / old_mult) * mult
+                    elif upg == "gcn_pumps":
+                        self.thermal_model.nominal_flow_kg_s = 18800.0 * (1.0 + (lvl - 1) * 0.05)
+                    elif upg == "steam_generators":
+                        self.thermal_model.k_sg_tubes = 75.0 * (1.0 + (lvl - 1) * 0.05)
+                    elif upg == "pz_stabilizer":
+                        self.thermal_model.pz_total_volume_m3 = 79.0 * (1.0 + (lvl - 1) * 0.04)
+        elif command == "tycoon_boost":
+            self.tycoon_boost_active = bool(value)
+            self.tycoon_boost_timer = 15.0 if bool(value) else 0.0
 
     def trigger_scenario(self, scenario_id: str, activate: bool) -> None:
         """
@@ -667,6 +694,17 @@ class SimulationEngine:
             secondary=self.secondary_state,
             controls=self.controls_state
         )
+
+        # Модификаторы улучшений тайкуна к выработке
+        if self.tycoon_boost_timer > 0:
+            self.tycoon_boost_timer = max(0.0, self.tycoon_boost_timer - dt)
+            if self.tycoon_boost_timer <= 0:
+                self.tycoon_boost_active = False
+
+        turb_lvl = self.tycoon_upgrades.get("turbine_generator", 1)
+        expected_mult = 1.0 + (turb_lvl - 1) * 0.03
+        if getattr(self.thermal_model, "turbine_efficiency_mult", 1.0) != expected_mult:
+            self.thermal_model.turbine_efficiency_mult = expected_mult
 
         # 5. Проверка срабатывания технологических защит энергоблока
         self.plant_state = self.safety.check_protections(

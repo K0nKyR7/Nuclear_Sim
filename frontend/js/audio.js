@@ -1423,6 +1423,126 @@ class PlantAudioEngine {
       });
     } catch (e) {}
   }
+
+  /**
+   * Звук звона монет / кассового аппарата при продаже энергии или клике
+   */
+  playCashChime() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      [1318.5, 1760.0, 2637.0].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+
+        gain.gain.setValueAtTime(0.001, now + idx * 0.04);
+        gain.gain.linearRampToValueAtTime(0.14, now + idx * 0.04 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.04 + 0.28);
+
+        osc.connect(gain);
+        gain.connect(targetGain);
+        osc.start(now + idx * 0.04);
+        osc.stop(now + idx * 0.04 + 0.3);
+      });
+    } catch (e) {}
+  }
+
+  /**
+   * Мощный восходящий звук активации Турбо-Буста (/boost)
+   */
+  playBoostActivate() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.6);
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(300, now);
+      filter.frequency.exponentialRampToValueAtTime(1800, now + 0.6);
+      filter.Q.setValueAtTime(3.0, now);
+
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(0.35, now + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(targetGain);
+
+      osc.start(now);
+      osc.stop(now + 0.9);
+    } catch (e) {}
+  }
+
+  /**
+   * Звук покупки улучшения / найма сотрудника (промышленное реле)
+   */
+  playUpgradePurchased() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.06);
+
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+
+      osc.connect(gain);
+      gain.connect(targetGain);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } catch (e) {}
+  }
+
+  /**
+   * Тактильный щелчок кликера выработки мощности
+   */
+  playClickPulse() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.05);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+      osc.connect(gain);
+      gain.connect(targetGain);
+      osc.start(now);
+      osc.stop(now + 0.07);
+    } catch (e) {}
+  }
 }
 
 // Глобальный экземпляр
