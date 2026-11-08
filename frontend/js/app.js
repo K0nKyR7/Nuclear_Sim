@@ -106,11 +106,22 @@ class ScadaApp {
         }
         this.previousAlarmCount = alarmCount;
 
-        // Взрыв оборудования / гидроудар / тепловой разгон: звук взрыва и сотрясение экрана
+        // Взрыв оборудования / гидроудар / тепловой разгон / ядерный взрыв
+        const isNuclear = Boolean(data.nuclear_detonation || data.explosion_type === 'nuclear');
         if (data.explosion_active && !this.previousExplosion) {
-          window.plantAudio.playExplosionBlast();
-          if (this.mimic) this.mimic.triggerScreenShake();
+          if (isNuclear) {
+            window.plantAudio.playNuclearDetonation();
+            if (this.mimic) this.mimic.triggerScreenShake(2.5);
+          } else {
+            window.plantAudio.playExplosionBlast();
+            if (this.mimic) this.mimic.triggerScreenShake(1.0);
+          }
         }
+        if (isNuclear && !this.previousNuclearDetonation) {
+          window.plantAudio.playNuclearDetonation();
+          if (this.mimic) this.mimic.triggerScreenShake(2.5);
+        }
+        this.previousNuclearDetonation = isNuclear;
         this.previousExplosion = Boolean(data.explosion_active);
 
         // Непрерывный свист выброса пара при разгерметизации контуров
@@ -416,6 +427,7 @@ class ScadaApp {
       this.updateScenarioButton('sc_loca', t.active_scenarios.loca_leak);
       this.updateScenarioButton('sc_stuck', t.active_scenarios.rod_stuck);
       this.updateScenarioButton('sc_grid', t.active_scenarios.grid_loss);
+      this.updateScenarioButton('sc_nuclear', t.active_scenarios.nuclear_blast || t.nuclear_detonation);
       this.updateScenarioButton('sc_prompt', t.active_scenarios.prompt_critical);
       this.updateScenarioButton('sc_guillotine', t.active_scenarios.guillotine_loca);
       this.updateScenarioButton('sc_sbo', t.active_scenarios.station_blackout);
@@ -725,6 +737,7 @@ class ScadaApp {
     bindScenario('sc_loca', 'loca_leak');
     bindScenario('sc_stuck', 'rod_stuck');
     bindScenario('sc_grid', 'grid_loss');
+    bindScenario('sc_nuclear', 'nuclear_blast');
     bindScenario('sc_prompt', 'prompt_critical');
     bindScenario('sc_guillotine', 'guillotine_loca');
     bindScenario('sc_sbo', 'station_blackout');

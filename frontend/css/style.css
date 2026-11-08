@@ -3971,3 +3971,21 @@ footer.operator-desk-apron {
 .btn-boron-ctrl:active {
   transform: translateY(1px);
 }
+
+/* Аварийная карточка сценария ядерного взрыва */
+.danger-nuclear-card {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(254, 202, 202, 0.3) !important;
+  background: linear-gradient(180deg, #3d1014 0%, #240a0e 50%, #120305 100%) !important;
+  animation: nuclear-card-pulse 2.2s infinite alternate ease-in-out;
+}
+
+.danger-nuclear-card:hover {
+  background: linear-gradient(180deg, #57161c 0%, #360c12 50%, #1c0407 100%) !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+@keyframes nuclear-card-pulse {
+  0% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); border-color: #dc2626; }
+  100% { box-shadow: 0 0 22px rgba(239, 68, 68, 0.8); border-color: #f87171; }
+}

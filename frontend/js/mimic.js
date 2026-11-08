@@ -144,8 +144,8 @@ class PlantMimic {
     return assemblies;
   }
 
-  triggerScreenShake() {
-    this.screenShake = 1.0;
+  triggerScreenShake(intensity = 1.0) {
+    this.screenShake = Math.max(this.screenShake, intensity);
   }
 
   resize() {
@@ -317,16 +317,17 @@ class PlantMimic {
         this.drawCoreCrossSection(w, h, s);
       } else {
         ctx.save();
-        // Динамическая тряска экрана при взрывах и гидроударах
+        // Динамическая тряска экрана при взрывах, гидроударах и ядерной детонации
         let shakeX = 0, shakeY = 0;
+        const isNuclear = Boolean(s.nuclear_detonation || s.explosion_type === 'nuclear');
         if (s.explosion_active && this.screenShake < 0.3) {
-          this.screenShake = 1.0;
+          this.screenShake = isNuclear ? 2.6 : 1.0;
         }
         if (this.screenShake > 0) {
-          const intensity = this.screenShake * 16;
+          const intensity = this.screenShake * (isNuclear ? 24 : 16);
           shakeX = (Math.random() - 0.5) * intensity;
           shakeY = (Math.random() - 0.5) * intensity;
-          this.screenShake = Math.max(0, this.screenShake - 0.02);
+          this.screenShake = Math.max(0, this.screenShake - (isNuclear ? 0.012 : 0.02));
         }
         if (ctx.translate) ctx.translate(this.panX + shakeX, this.panY + shakeY);
         ctx.scale(this.zoom, this.zoom);
@@ -786,16 +787,25 @@ class PlantMimic {
 
     // 3. ВЕРХНИЙ БЛОК (Съемный сферический купол крышки реактора)
     const domeH = flangeY - top;
-    const domeGrad = ctx.createRadialGradient(x, flangeY - 10, 5, x, flangeY - 10, w * 0.6);
+    const isHeadBlown = Boolean(s.reactor_head_blown || s.nuclear_detonation);
+
+    ctx.save();
+    if (isHeadBlown) {
+      // 200-тонная крышка реактора оторвана взрывом и отброшена вверх под углом
+      ctx.translate(x + 42, top - 86);
+      ctx.rotate(-0.36);
+    }
+
+    const domeGrad = ctx.createRadialGradient(isHeadBlown ? 0 : x, isHeadBlown ? 0 : flangeY - 10, 5, isHeadBlown ? 0 : x, isHeadBlown ? 0 : flangeY - 10, w * 0.6);
     domeGrad.addColorStop(0, '#33465c');
     domeGrad.addColorStop(0.7, '#1b2635');
     domeGrad.addColorStop(1, '#0e151e');
 
     ctx.fillStyle = domeGrad;
-    ctx.strokeStyle = '#4b637e';
+    ctx.strokeStyle = isHeadBlown ? '#f87171' : '#4b637e';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.ellipse(x, flangeY - 4, w * 0.52, domeH * 0.85, 0, Math.PI, 0, false);
+    ctx.ellipse(isHeadBlown ? 0 : x, isHeadBlown ? 0 : flangeY - 4, w * 0.52, domeH * 0.85, 0, Math.PI, 0, false);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -803,12 +813,12 @@ class PlantMimic {
     // Патрубки и чехлы ШЭМ-3 приводов СУЗ над куполом крышки
     const numDrives = 7;
     for (let i = 0; i < numDrives; i++) {
-      const dx = x - w * 0.36 + i * (w * 0.72 / (numDrives - 1));
-      const driveTop = top - 24;
-      const driveBottom = flangeY - 12 - Math.sin((i / (numDrives - 1)) * Math.PI) * 14;
+      const dx = (isHeadBlown ? 0 : x) - w * 0.36 + i * (w * 0.72 / (numDrives - 1));
+      const driveTop = (isHeadBlown ? -domeH * 0.85 - 20 : top - 24);
+      const driveBottom = (isHeadBlown ? -6 : flangeY - 12) - Math.sin((i / (numDrives - 1)) * Math.PI) * 14;
 
       // Чехол привода ШЭМ (труба)
-      ctx.strokeStyle = '#64748b';
+      ctx.strokeStyle = isHeadBlown ? '#94a3b8' : '#64748b';
       ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.moveTo(dx, driveBottom);
@@ -822,6 +832,37 @@ class PlantMimic {
       // Головка чехла привода с датчиком положения
       ctx.fillStyle = '#94a3b8';
       ctx.fillRect(dx - 4, driveTop, 8, 5);
+    }
+    ctx.restore();
+
+    // Если крышка сорвана ядерным взрывом, из открытого жерла шахты бьет столб ядерного пламени
+    if (isHeadBlown) {
+      ctx.save();
+      const fireGrad = ctx.createLinearGradient(0, flangeY, 0, flangeY - 80);
+      fireGrad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+      fireGrad.addColorStop(0.25, 'rgba(253, 224, 71, 0.95)');
+      fireGrad.addColorStop(0.65, 'rgba(239, 68, 68, 0.85)');
+      fireGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+
+      ctx.fillStyle = fireGrad;
+      ctx.beginPath();
+      ctx.moveTo(x - w * 0.44, flangeY);
+      ctx.lineTo(x - w * 0.22, flangeY - 75);
+      ctx.lineTo(x + w * 0.22, flangeY - 75);
+      ctx.lineTo(x + w * 0.44, flangeY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Разлетающиеся раскаленные фрагменты ТВЭЛ и графита
+      ctx.fillStyle = '#fef08a';
+      for (let f = 0; f < 12; f++) {
+        const fx = x + Math.sin(this.animTime * 12 + f * 1.8) * (w * 0.42);
+        const fy = flangeY - ((f * 14 + this.animTime * 210) % 85);
+        ctx.beginPath();
+        ctx.arc(fx, fy, 2.5 + (f % 3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
     }
 
     // 4. ШАХТА РЕАКТОРА И ОПУСКНОЙ КОРИДОР (Downcomer annulus)
@@ -3023,6 +3064,171 @@ class PlantMimic {
   /**
    * Отрисовка аварийных эффектов: взрывы, свищи высокого давления, дым и расплав активной зоны
    */
+  /**
+   * Отрисовка колоссального сверхкритического ядерного взрыва:
+   * ослепительная вспышка детонации, сорванная 200-тонная крышка реактора,
+   * атомный гриб (ножка и тороидальная шляпка с куполом Вильсона),
+   * ударные волны и радиационные помехи (EMP).
+   */
+  drawNuclearMushroomCloud(rx, ry, rw, rh, s) {
+    const ctx = this.ctx;
+    ctx.save();
+
+    const top = ry - rh / 2;
+    const flangeY = top + rh * 0.16;
+    const isInitialBlast = s.explosion_active && (s.explosion_type === 'nuclear');
+
+    // 1. ОСЛЕПИТЕЛЬНАЯ ВСПЫШКА ЯДЕРНОЙ ДЕТОНАЦИИ (ПЕРВЫЕ СЕКУНДЫ ВЗРЫВА)
+    if (isInitialBlast) {
+      ctx.save();
+      // Ослепляющая вспышка на всю ширину экрана (бело-голубой черенковский спектр -> золотисто-огненный)
+      const flashPulse = Math.sin(this.animTime * 14) * 0.15 + 0.85;
+      const blastRadius = 380 + Math.sin(this.animTime * 6) * 40;
+      const flashGrad = ctx.createRadialGradient(rx, flangeY, 15, rx, flangeY, blastRadius);
+      flashGrad.addColorStop(0, `rgba(255, 255, 255, ${0.98 * flashPulse})`);
+      flashGrad.addColorStop(0.2, `rgba(186, 230, 253, ${0.85 * flashPulse})`);
+      flashGrad.addColorStop(0.45, `rgba(253, 224, 71, ${0.75 * flashPulse})`);
+      flashGrad.addColorStop(0.75, `rgba(239, 68, 68, ${0.45 * flashPulse})`);
+      flashGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+
+      ctx.fillStyle = flashGrad;
+      ctx.beginPath();
+      ctx.arc(rx, flangeY, blastRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Сверхзвуковые ударные волны сжатия (скачок уплотнения Маха)
+      for (let w = 0; w < 3; w++) {
+        const waveR = ((this.animTime * 620 + w * 180) % 520) + 20;
+        const alpha = Math.max(0, 1.0 - waveR / 520);
+        ctx.strokeStyle = w === 0 ? `rgba(255, 255, 255, ${alpha * 0.95})` : (w === 1 ? `rgba(254, 240, 138, ${alpha * 0.8})` : `rgba(239, 68, 68, ${alpha * 0.7})`);
+        ctx.lineWidth = 5 - w;
+        ctx.beginPath();
+        ctx.arc(rx, flangeY, waveR, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 2. СТВОЛ (НОЖКА) ЯДЕРНОГО ГРИБА
+    const stemTopY = Math.max(35, flangeY - 240);
+    const stemBottomY = flangeY;
+    const stemHeight = stemBottomY - stemTopY;
+    const stemW = rw * 0.55;
+
+    // Внутренний огненно-плазменный столб восходящего потока
+    const stemGrad = ctx.createLinearGradient(rx - stemW / 2, 0, rx + stemW / 2, 0);
+    stemGrad.addColorStop(0, 'rgba(239, 68, 68, 0.4)');
+    stemGrad.addColorStop(0.25, 'rgba(249, 115, 22, 0.9)');
+    stemGrad.addColorStop(0.5, 'rgba(254, 240, 138, 0.98)');
+    stemGrad.addColorStop(0.75, 'rgba(249, 115, 22, 0.9)');
+    stemGrad.addColorStop(1, 'rgba(239, 68, 68, 0.4)');
+
+    ctx.fillStyle = stemGrad;
+    ctx.beginPath();
+    ctx.moveTo(rx - stemW * 0.6, stemBottomY);
+    ctx.quadraticCurveTo(rx - stemW * 0.35, stemBottomY - stemHeight * 0.5, rx - stemW * 0.5, stemTopY);
+    ctx.lineTo(rx + stemW * 0.5, stemTopY);
+    ctx.quadraticCurveTo(rx + stemW * 0.35, stemBottomY - stemHeight * 0.5, rx + stemW * 0.6, stemBottomY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Вихревые клубы дыма и радиоактивного пепла вдоль ствола
+    const numPuffs = 18;
+    for (let i = 0; i < numPuffs; i++) {
+      const puffProg = ((this.animTime * 1.6 + i / numPuffs) % 1.0);
+      const py = stemBottomY - puffProg * stemHeight;
+      const side = (i % 2 === 0) ? -1 : 1;
+      const px = rx + side * (stemW * 0.4 + Math.sin(puffProg * Math.PI * 3 + this.animTime * 4) * 12);
+      const pr = 12 + puffProg * 22;
+
+      const puffGrad = ctx.createRadialGradient(px, py, 2, px, py, pr);
+      puffGrad.addColorStop(0, 'rgba(254, 215, 170, 0.85)');
+      puffGrad.addColorStop(0.4, 'rgba(185, 28, 28, 0.7)');
+      puffGrad.addColorStop(0.8, 'rgba(24, 24, 27, 0.85)');
+      puffGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+
+      ctx.fillStyle = puffGrad;
+      ctx.beginPath();
+      ctx.arc(px, py, pr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. ШЛЯПКА ЯДЕРНОГО ГРИБА (ТОРОИДАЛЬНЫЙ ВИХРЬ ОБЛАКА)
+    const capX = rx;
+    const capY = stemTopY;
+    const capW = Math.max(340, rw * 2.8);
+    const capH = 150;
+
+    // Купол Вильсона / конденсационное облако ударной волны
+    const wilsonGrad = ctx.createRadialGradient(capX, capY + 15, 10, capX, capY + 15, capW * 0.55);
+    wilsonGrad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+    wilsonGrad.addColorStop(0.4, 'rgba(224, 242, 254, 0.35)');
+    wilsonGrad.addColorStop(0.8, 'rgba(147, 197, 253, 0.15)');
+    wilsonGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = wilsonGrad;
+    ctx.beginPath();
+    ctx.ellipse(capX, capY + 20, capW * 0.52, 34, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Кипящие клубы тороидальной шляпки гриба (множество накладывающихся вихрей)
+    const lobes = 22;
+    for (let l = 0; l < lobes; l++) {
+      const angle = (l / lobes) * Math.PI * 2 + this.animTime * 0.45;
+      const rX = capW * 0.42 * (0.8 + 0.2 * Math.sin(angle * 3 + this.animTime));
+      const rY = (capH * 0.38) * (0.8 + 0.2 * Math.cos(angle * 2 + this.animTime));
+      const lx = capX + Math.cos(angle) * rX;
+      const ly = capY - 25 + Math.sin(angle) * rY;
+      const lr = 28 + (l % 4) * 8;
+
+      const lobeGrad = ctx.createRadialGradient(lx, ly, 3, lx, ly, lr);
+      lobeGrad.addColorStop(0, '#fef08a');
+      lobeGrad.addColorStop(0.3, '#f97316');
+      lobeGrad.addColorStop(0.65, '#991b1b');
+      lobeGrad.addColorStop(0.9, 'rgba(24, 24, 27, 0.95)');
+      lobeGrad.addColorStop(1, 'rgba(9, 9, 11, 0)');
+
+      ctx.fillStyle = lobeGrad;
+      ctx.beginPath();
+      ctx.arc(lx, ly, lr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Раскаленное ядро в центре шляпки гриба (термоядерная сердцевина)
+    const coreGrad = ctx.createRadialGradient(capX, capY - 28, 5, capX, capY - 28, capW * 0.32);
+    coreGrad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+    coreGrad.addColorStop(0.25, 'rgba(253, 224, 71, 0.95)');
+    coreGrad.addColorStop(0.6, 'rgba(239, 68, 68, 0.85)');
+    coreGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+    ctx.fillStyle = coreGrad;
+    ctx.beginPath();
+    ctx.ellipse(capX, capY - 28, capW * 0.30, capH * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4. РАДИОАКТИВНЫЙ ДОЖДЬ И ИОНИЗИРУЮЩИЕ ИСКРЫ
+    ctx.fillStyle = '#fef08a';
+    for (let sIdx = 0; sIdx < 36; sIdx++) {
+      const sparkProg = ((this.animTime * 1.8 + sIdx * 0.08) % 1.0);
+      const spAng = (sIdx / 36) * Math.PI * 2;
+      const spDist = 30 + sparkProg * 180;
+      const spx = rx + Math.cos(spAng) * spDist;
+      const spy = capY + 10 + sparkProg * (rh * 0.8) + Math.sin(sIdx) * 20;
+
+      ctx.beginPath();
+      ctx.arc(spx, spy, 1.8 + (sIdx % 3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 5. ИОНИЗИРУЮЩИЕ РАДИАЦИОННЫЕ ПОМЕХИ НА ЭКРАНЕ (ЭФФЕКТ ГАММА-ИЗЛУЧЕНИЯ НА СЕНСОР)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    for (let g = 0; g < 40; g++) {
+      const gx = (Math.sin(g * 97.3 + this.animTime * 30) * 0.5 + 0.5) * this.width;
+      const gy = (Math.cos(g * 51.7 + this.animTime * 25) * 0.5 + 0.5) * this.height;
+      ctx.fillRect(gx, gy, 2.5, 1.5);
+    }
+
+    ctx.restore();
+  }
+
   drawAccidentAndExplosions(rx, ry, rw, rh, sgx, sgy, sgw, sgh, pzx, pzy, turbx, turby, s) {
     const ctx = this.ctx;
     ctx.save();
@@ -3158,8 +3364,14 @@ class PlantMimic {
       ctx.restore();
     }
 
-    // 4. ВСПЫШКА ВЗРЫВА И УДАРНАЯ ВОЛНА
-    if (s.explosion_active) {
+    // 4. ЯДЕРНЫЙ ВЗРЫВ И АТОМНЫЙ ГРИБ (КАТАСТРОФИЧЕСКАЯ ДЕТОНАЦИЯ)
+    const isNuclearDetonation = Boolean(s.nuclear_detonation || s.explosion_type === 'nuclear');
+    if (isNuclearDetonation) {
+      this.drawNuclearMushroomCloud(rx, ry, rw, rh, s);
+    }
+
+    // 5. ВСПЫШКА ВЗРЫВА И УДАРНАЯ ВОЛНА (ДРУГИЕ ВЗРЫВЫ)
+    if (s.explosion_active && !isNuclearDetonation) {
       ctx.save();
       let expX = rx, expY = ry;
       if (s.explosion_type === 'primary_pipe') {
@@ -3238,7 +3450,13 @@ class PlantMimic {
     let titleCol = '#38bdf8';
     let titleText = '✓ ШТАТНЫЙ РЕЖИМ РАБОТЫ (100% Nном)';
 
-    if (isExplosion) {
+    if (s.nuclear_detonation || s.explosion_type === 'nuclear') {
+      const pulse = Math.sin(this.animTime * 12) * 0.2 + 0.8;
+      bgCol = `rgba(185, 28, 28, ${pulse})`;
+      borderCol = '#ef4444';
+      titleCol = '#ffffff';
+      titleText = '☢ КАТАСТРОФА: СВЕРХКРИТИЧЕСКИЙ ЯДЕРНЫЙ ВЗРЫВ (ЗОНА УНИЧТОЖЕНА)';
+    } else if (isExplosion) {
       const pulse = Math.sin(this.animTime * 10) * 0.25 + 0.75;
       bgCol = `rgba(127, 29, 29, ${pulse})`;
       borderCol = '#ef4444';

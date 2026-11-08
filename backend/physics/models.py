@@ -202,5 +202,7 @@ class TelemetryData:
     steam_pipe_ruptured: bool = False
     explosion_active: bool = False
     explosion_type: str = ""
+    nuclear_detonation: bool = False
+    reactor_head_blown: bool = False
     safety_system_bypassed: bool = False
     alarms: List[Dict[str, Any]] = field(default_factory=list)

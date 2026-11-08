@@ -51,11 +51,25 @@ class ThermalHydraulicsModel:
         self.containment_pressure_kpa = 101.3 # Давление в гермооболочке (кПа)
         self.radiation_level_mr_h = 12.0    # Радиационный фон в ГО (мкР/ч)
         self.hydrogen_pct = 0.0             # Концентрация водорода H2 в ГО (%)
+        self.nuclear_detonation = False     # Катастрофический сверхкритический ядерный взрыв
+        self.reactor_head_blown = False     # Срыв верхнего блока и крышки реактора (200 тонн)
 
     def trigger_explosion(self, exp_type: str) -> None:
         self.explosion_active = True
         self.explosion_type = exp_type
-        self.explosion_timer = 3.5
+        self.explosion_timer = 15.0 if exp_type == "nuclear" else 3.5
+
+    def trigger_nuclear_explosion(self) -> None:
+        self.nuclear_detonation = True
+        self.reactor_head_blown = True
+        self.core_damage_pct = 100.0
+        self.primary_rupture = True
+        self.steam_pipe_ruptured = True
+        self.loca_leak_rate_kg_s = 4800.0
+        self.hydrogen_pct = 16.5
+        self.radiation_level_mr_h = 45000.0
+        self.containment_pressure_kpa = 420.0
+        self.trigger_explosion("nuclear")
 
     def step(
         self,
@@ -79,6 +93,12 @@ class ThermalHydraulicsModel:
             self.explosion_timer -= dt
             if self.explosion_timer <= 0:
                 self.explosion_active = False
+
+        if self.nuclear_detonation:
+            self.core_damage_pct = 100.0
+            self.radiation_level_mr_h = max(self.radiation_level_mr_h, 38000.0)
+            primary.pressure_mpa = max(0.1, primary.pressure_mpa - 3.5 * dt)
+            primary.t_fuel_c = max(primary.t_fuel_c, 2600.0)
 
         # Катастрофический гильотинный разрыв петли ГЦТ Ду-850
         if self.guillotine_loca and not self.primary_rupture:

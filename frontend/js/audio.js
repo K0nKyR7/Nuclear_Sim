@@ -574,6 +574,100 @@ class PlantAudioEngine {
   /**
    * Мощный процедурный звук взрыва / гидроудара / разрушения контура
    */
+  /**
+   * Разрушительный процедурный звук сверхкритического ядерного взрыва реактора
+   */
+  playNuclearDetonation() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      // 1. Оглушительный гиперзвуковой щелчок ударного фронта волны детонации
+      const snapOsc = this.ctx.createOscillator();
+      const snapGain = this.ctx.createGain();
+      snapOsc.type = 'sawtooth';
+      snapOsc.frequency.setValueAtTime(1400, now);
+      snapOsc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+
+      snapGain.gain.setValueAtTime(1.0, now);
+      snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+      snapOsc.connect(snapGain);
+      snapGain.connect(targetGain);
+      snapOsc.start(now);
+      snapOsc.stop(now + 0.16);
+
+      // 2. Сверхмощный инфразвуковой сейсмический басовый удар (дроп 140 -> 18 Гц)
+      const subOsc = this.ctx.createOscillator();
+      const subGain = this.ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(140, now);
+      subOsc.frequency.exponentialRampToValueAtTime(18, now + 3.8);
+
+      subGain.gain.setValueAtTime(1.0, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 4.5);
+
+      subOsc.connect(subGain);
+      subGain.connect(targetGain);
+      subOsc.start(now);
+      subOsc.stop(now + 4.6);
+
+      // 3. Раскатистый грохот ядерного огненного шара и разрушения реакторного зала
+      const bufferSize = this.ctx.sampleRate * 4.5;
+      const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+
+      const whiteNoise = this.ctx.createBufferSource();
+      whiteNoise.buffer = noiseBuffer;
+
+      const lowpass = this.ctx.createBiquadFilter();
+      lowpass.type = 'lowpass';
+      lowpass.frequency.setValueAtTime(1200, now);
+      lowpass.frequency.exponentialRampToValueAtTime(45, now + 4.2);
+      lowpass.Q.setValueAtTime(4.0, now);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.95, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 4.4);
+
+      whiteNoise.connect(lowpass);
+      lowpass.connect(noiseGain);
+      noiseGain.connect(targetGain);
+
+      whiteNoise.start(now);
+      whiteNoise.stop(now + 4.5);
+
+      // 4. Скрежет 200-тонной крышки и разрываемого металла корпуса реактора
+      const metalOsc = this.ctx.createOscillator();
+      const metalGain = this.ctx.createGain();
+      metalOsc.type = 'sawtooth';
+      metalOsc.frequency.setValueAtTime(480, now + 0.05);
+      metalOsc.frequency.exponentialRampToValueAtTime(60, now + 0.9);
+
+      metalGain.gain.setValueAtTime(0.6, now + 0.05);
+      metalGain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+
+      metalOsc.connect(metalGain);
+      metalGain.connect(targetGain);
+      metalOsc.start(now + 0.05);
+      metalOsc.stop(now + 1.15);
+
+      // Запуск непрерывной сирены и зашкаливания счетчика Гейгера
+      this.startSiren();
+      this.setRadiationLevel(35000);
+
+      console.log('[SCADA Audio] Звуковой эффект ядерного взрыва воспроизведен!');
+    } catch (err) {
+      console.warn('[SCADA Audio] Ошибка синтеза ядерного взрыва:', err);
+    }
+  }
+
   playExplosionBlast() {
     this.ensureReady();
     if (!this.ctx || this.isMuted) return;

@@ -64,3 +64,20 @@ def test_safety_bypass_toggle_command():
 
     engine.apply_control("dilute_boron", 30)
     assert engine.primary_state.boron_ppm == init_boron + 20
+
+
+def test_nuclear_catastrophe_detonation():
+    """Тест сценария ядерного взрыва: срыв крышки реактора, разрушение активной зоны, запредельная радиация."""
+    engine = SimulationEngine()
+    engine.trigger_scenario("nuclear_blast", True)
+
+    for _ in range(20):
+        engine.step()
+
+    assert engine.thermal_model.nuclear_detonation is True
+    assert engine.thermal_model.reactor_head_blown is True
+    assert engine.thermal_model.core_damage_pct == 100.0
+    assert engine.thermal_model.explosion_active is True
+    assert engine.thermal_model.explosion_type == "nuclear"
+    assert engine.thermal_model.radiation_level_mr_h > 10000.0
+    assert engine.plant_state in [PlantState.EXPLOSION, PlantState.MELTDOWN]

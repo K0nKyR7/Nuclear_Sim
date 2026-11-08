@@ -94,6 +94,8 @@ def get_full_telemetry_dict() -> dict:
         "steam_pipe_ruptured": telemetry.steam_pipe_ruptured,
         "explosion_active": telemetry.explosion_active,
         "explosion_type": telemetry.explosion_type,
+        "nuclear_detonation": telemetry.nuclear_detonation,
+        "reactor_head_blown": telemetry.reactor_head_blown,
         "safety_system_bypassed": telemetry.safety_system_bypassed,
         "is_paused": engine.is_paused,
         "time_scale": engine.time_scale,

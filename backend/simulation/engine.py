@@ -50,7 +50,8 @@ class SimulationEngine:
             "guillotine_loca": False,
             "station_blackout": False,
             "core_meltdown": False,
-            "bypass_safety": False
+            "bypass_safety": False,
+            "nuclear_blast": False
         }
 
     def reset(self) -> None:
@@ -149,10 +150,14 @@ class SimulationEngine:
                 self.secondary_state.turbine_trip_valve = False
                 self.safety.add_alarm("СЕТЬ: Отключение от энергосистемы, сброс электрической нагрузки!", AlarmLevel.CRITICAL, self.sim_time_s)
 
-        elif scenario_id == "prompt_critical":
+        elif scenario_id in ("prompt_critical", "nuclear_blast"):
             if activate:
                 self.controls_state.auto_power_controller = False
-                self.safety.add_alarm("КАТАСТРОФА: Разгон реактора на мгновенных нейтронах! Реактивность rho > beta_eff!", AlarmLevel.CRITICAL, self.sim_time_s)
+                self.controls_state.rod_manual_speed_pct_s = 0.0
+                self.controls_state.rod_position_pct = 100.0
+                self.thermal_model.trigger_nuclear_explosion()
+                self.plant_state = PlantState.EXPLOSION
+                self.safety.add_alarm("КАТАСТРОФА: ЯДЕРНЫЙ ВЗРЫВ РЕАКТОРА! СВЕРХКРИТИЧНОСТЬ НА МГНОВЕННЫХ НЕЙТРОНАХ! СРЫВ КРЫШКИ!", AlarmLevel.CRITICAL, self.sim_time_s)
 
         elif scenario_id == "guillotine_loca":
             self.thermal_model.guillotine_loca = activate
@@ -332,6 +337,8 @@ class SimulationEngine:
             steam_pipe_ruptured=self.thermal_model.steam_pipe_ruptured,
             explosion_active=self.thermal_model.explosion_active,
             explosion_type=self.thermal_model.explosion_type,
+            nuclear_detonation=self.thermal_model.nuclear_detonation,
+            reactor_head_blown=self.thermal_model.reactor_head_blown,
             safety_system_bypassed=self.controls_state.safety_system_bypassed,
             alarms=alarm_dicts
         )
