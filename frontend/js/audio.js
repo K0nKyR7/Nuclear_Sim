@@ -1118,6 +1118,114 @@ class PlantAudioEngine {
       this.steamGainNode = null;
     }
   }
+
+
+  /**
+   * Разрушительный звук разбивающегося толстого взрывозащищенного стекла кинескопа ЭЛТ
+   * Включает схлопывание вакуумной колбы, резкий треск стекла и осыпание сотен осколков
+   */
+  playGlassShatter() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      // 1. Схлопывание вакуумной колбы кинескопа (глухой вакуумный поп 240 -> 35 Гц)
+      const vacOsc = this.ctx.createOscillator();
+      const vacGain = this.ctx.createGain();
+      vacOsc.type = 'triangle';
+      vacOsc.frequency.setValueAtTime(240, now);
+      vacOsc.frequency.exponentialRampToValueAtTime(35, now + 0.14);
+
+      vacGain.gain.setValueAtTime(0.85, now);
+      vacGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+      vacOsc.connect(vacGain);
+      vacGain.connect(targetGain);
+      vacOsc.start(now);
+      vacOsc.stop(now + 0.18);
+
+      // 2. Острый высокочастотный треск раскалывающегося толстого свинцового стекла (4200 -> 450 Гц)
+      const snapOsc = this.ctx.createOscillator();
+      const snapGain = this.ctx.createGain();
+      snapOsc.type = 'sawtooth';
+      snapOsc.frequency.setValueAtTime(4200, now);
+      snapOsc.frequency.exponentialRampToValueAtTime(450, now + 0.08);
+
+      const snapFilter = this.ctx.createBiquadFilter();
+      snapFilter.type = 'highpass';
+      snapFilter.frequency.setValueAtTime(1800, now);
+
+      snapGain.gain.setValueAtTime(0.95, now);
+      snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+      snapOsc.connect(snapFilter);
+      snapFilter.connect(snapGain);
+      snapGain.connect(targetGain);
+      snapOsc.start(now);
+      snapOsc.stop(now + 0.14);
+
+      // 3. Звон и осыпание стеклянных осколков по металлическому пульту
+      const shardFreqs = [2400, 3100, 4200, 5100, 6300, 7200, 3800, 4900, 5800];
+      for (let i = 0; i < shardFreqs.length; i++) {
+        const shardTime = now + 0.04 + i * 0.09 + Math.random() * 0.04;
+        const sOsc = this.ctx.createOscillator();
+        const sGain = this.ctx.createGain();
+
+        sOsc.type = (i % 2 === 0) ? 'sine' : 'triangle';
+        sOsc.frequency.setValueAtTime(shardFreqs[i] + Math.random() * 400, shardTime);
+
+        const decay = 0.08 + Math.random() * 0.14;
+        sGain.gain.setValueAtTime(0.28, shardTime);
+        sGain.gain.exponentialRampToValueAtTime(0.0005, shardTime + decay);
+
+        sOsc.connect(sGain);
+        sGain.connect(targetGain);
+        sOsc.start(shardTime);
+        sOsc.stop(shardTime + decay + 0.02);
+      }
+
+      console.log('[SCADA Audio] Звук разбития стекла монитора воспроизведен');
+    } catch (e) {
+      console.warn('[SCADA Audio] Ошибка звука разбитого стекла:', e);
+    }
+  }
+
+  /**
+   * Электрический щелчок короткого замыкания и снопа искр при нажатии сломанных кнопок
+   */
+  playShortCircuitSpark() {
+    this.ensureReady();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const targetGain = this.masterGain || this.ctx.destination;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.linearRampToValueAtTime(60, now + 0.07);
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(2800, now);
+      filter.Q.setValueAtTime(4.0, now);
+
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(targetGain);
+
+      osc.start(now);
+      osc.stop(now + 0.09);
+    } catch (e) {}
+  }
 }
 
 // Глобальный экземпляр

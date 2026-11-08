@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>БЩУ-1 | ЭНЕРГОБЛОК №1 ВВЭР-1000 | ПУЛЬТ ОПЕРАТОРА</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=1794200000">
+  <link rel="stylesheet" href="/static/css/style.css?v=1794300000">
 </head>
 <body class="desk-body">
 
@@ -129,12 +129,74 @@
           <div class="crt-header-spec">АСУ ТП «ТЕМП» • 20 Гц • ГОСТ 25804</div>
         </div>
 
-        <div class="mimic-canvas-wrapper">
+        <div class="mimic-canvas-wrapper" id="mimicWrapper">
           <canvas id="mimicCanvas"></canvas>
           <!-- Стеклянный блик ЭЛТ-монитора и кинескопные строки -->
           <div class="crt-scanlines"></div>
           <div class="crt-glare-reflection"></div>
           <div class="crt-phosphor-glow"></div>
+
+          <!-- Слой разбитого стекла кинескопа ЭЛТ при взрыве реактора -->
+          <div id="crtShatteredGlass" class="crt-shattered-glass">
+            <svg class="cracks-svg" viewBox="0 0 1000 650" preserveAspectRatio="none">
+              <defs>
+                <filter id="glassGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="1.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <g class="cracks-lines" filter="url(#glassGlow)">
+                <!-- Эпицентр гидроударного разрушения (координаты купола реактора) -->
+                <circle cx="210" cy="240" r="16" class="crack-core" />
+                <circle cx="210" cy="240" r="38" class="crack-ring" />
+                <circle cx="210" cy="240" r="75" class="crack-ring" />
+                <circle cx="210" cy="240" r="130" class="crack-ring" />
+                <circle cx="210" cy="240" r="210" class="crack-ring" />
+                <circle cx="210" cy="240" r="320" class="crack-ring" />
+                <circle cx="210" cy="240" r="480" class="crack-ring" />
+                <circle cx="210" cy="240" r="680" class="crack-ring" />
+
+                <!-- Магистральные радиальные трещины с изломами -->
+                <path d="M210,240 L160,140 L110,70 L50,20 L0,0" class="crack-major" />
+                <path d="M210,240 L240,110 L270,40 L290,0" class="crack-major" />
+                <path d="M210,240 L360,130 L520,70 L720,25 L880,0" class="crack-major" />
+                <path d="M210,240 L410,210 L640,180 L820,150 L1000,120" class="crack-major" />
+                <path d="M210,240 L440,280 L680,310 L870,350 L1000,380" class="crack-major" />
+                <path d="M210,240 L400,370 L620,470 L830,560 L1000,620" class="crack-major" />
+                <path d="M210,240 L310,410 L440,540 L540,650" class="crack-major" />
+                <path d="M210,240 L230,420 L240,550 L250,650" class="crack-major" />
+                <path d="M210,240 L160,400 L110,530 L70,650" class="crack-major" />
+                <path d="M210,240 L90,360 L30,460 L0,510" class="crack-major" />
+                <path d="M210,240 L60,280 L20,310 L0,320" class="crack-major" />
+                <path d="M210,240 L40,210 L0,200" class="crack-major" />
+                <path d="M210,240 L70,150 L20,110 L0,90" class="crack-major" />
+
+                <!-- Разветвленные вторичные паутинные расколы -->
+                <path d="M160,140 L210,120 L270,160 L310,120" class="crack-branch" />
+                <path d="M110,70 L170,50 L240,70" class="crack-branch" />
+                <path d="M360,130 L430,90 L480,140 L550,110" class="crack-branch" />
+                <path d="M410,210 L480,170 L560,220 L640,180" class="crack-branch" />
+                <path d="M440,280 L520,330 L590,290 L670,340" class="crack-branch" />
+                <path d="M400,370 L480,420 L570,390 L650,450" class="crack-branch" />
+                <path d="M310,410 L370,480 L440,460 L500,530" class="crack-branch" />
+                <path d="M160,400 L210,470 L260,450 L310,520" class="crack-branch" />
+                <path d="M90,360 L140,430 L180,480" class="crack-branch" />
+                <path d="M60,280 L110,320 L150,290" class="crack-branch" />
+                <path d="M70,150 L120,200 L160,180" class="crack-branch" />
+
+                <!-- Сколы и выбитые сектора свинцового стекла (черные дыры кинескопа) -->
+                <polygon points="195,225 225,215 235,245 205,255" class="crack-hole" />
+                <polygon points="215,205 245,190 260,220 228,230" class="crack-hole" />
+                <polygon points="175,240 195,268 170,280 155,252" class="crack-hole" />
+                <polygon points="225,250 250,270 230,285 210,265" class="crack-hole" />
+              </g>
+            </svg>
+            <div class="glass-glare-shatter"></div>
+            <div class="glass-dust-particles"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -1140,10 +1202,77 @@
     </div>
   </footer>
 
+  <!-- ТЕРМИНАЛЬНОЕ ОКНО ЗАВЕРШЕНИЯ ИГРЫ: ЯДЕРНАЯ КАТАСТРОФА -->
+  <div id="gameOverModal" class="game-over-modal-overlay">
+    <div class="game-over-box metal-heavy-panel">
+      <div class="game-over-header">
+        <div class="hazard-tri-glow">☢</div>
+        <div class="game-over-title-group">
+          <div class="game-over-super-title">ГОСКОМИССИЯ ПО ЧРЕЗВЫЧАЙНЫМ СИТУАЦИЯМ СССР • МИНЭНЕРГО</div>
+          <h1 class="game-over-title">ЭНЕРГОБЛОК №1 ПОЛНОСТЬЮ УНИЧТОЖЕН</h1>
+          <div class="game-over-sub">СВЕРХКРИТИЧЕСКИЙ РАЗГОН РЕАКТОРА • РАЗРУШЕНИЕ ГЕРМООБОЛОЧКИ И ЭНЕРГОБЛОКА</div>
+        </div>
+      </div>
+
+      <div class="game-over-body">
+        <div class="game-over-report-card">
+          <div class="ines-badge-fatal">
+            <span class="ines-level">УРОВЕНЬ INES: 7</span>
+            <span class="ines-text">ГЛОБАЛЬНАЯ ЯДЕРНАЯ АВАРИЯ</span>
+          </div>
+
+          <p class="report-lead-text">
+            В результате неуправляемого разгона мощности на мгновенных нейтронах произошла детонация реакторной установки. 
+            200-тонная верхняя крышка реактора сорвана взрывом, корпус разорван, активная зона расплавлена и испарена в атмосферу.
+            Оборудование пульта управления разбито и выведено из строя ударной волной.
+          </p>
+
+          <div class="postmortem-metrics-grid">
+            <div class="postmortem-card danger">
+              <div class="pm-lbl">СОСТОЯНИЕ АКТИВНОЙ ЗОНЫ</div>
+              <div class="pm-val">100% РАЗРУШЕНИЕ / ИСПАРЕНИЕ</div>
+              <div class="pm-sub">Жерло шахты реактора открыто в небо</div>
+            </div>
+
+            <div class="postmortem-card danger">
+              <div class="pm-lbl">РАДИАЦИОННЫЙ ФОН</div>
+              <div class="pm-val">> 50 000 мР/ч</div>
+              <div class="pm-sub">Смертельная доза за 30 секунд</div>
+            </div>
+
+            <div class="postmortem-card danger">
+              <div class="pm-lbl">ДАВЛЕНИЕ В 1К / БОКСАХ</div>
+              <div class="pm-val">0.00 МПа (РАЗРЫВ)</div>
+              <div class="pm-sub">Полная разгерметизация первого контура</div>
+            </div>
+
+            <div class="postmortem-card danger">
+              <div class="pm-lbl">ПУЛЬТ ОПЕРАТОРА (БЩУ)</div>
+              <div class="pm-val">ВЫВЕДЕН ИЗ СТРОЯ</div>
+              <div class="pm-sub">Кнопки разбиты, монитор разрушен</div>
+            </div>
+          </div>
+
+          <div class="official-resolution-banner">
+            <span class="res-stamp">РЕШЕНИЕ:</span>
+            <span>Дальнейшая эксплуатация энергоблока невозможна. Персонал эвакуирован. Объявлена 30-километровая зона отчуждения.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="game-over-footer">
+        <button id="btnRestartGame" class="btn-restart-game" title="Сбросить все повреждения и заново запустить энергоблок">
+          <span class="restart-glow-icon">⟳</span>
+          <span class="restart-caption">ПЕРЕЗАГРУЗИТЬ ЭНЕРГОБЛОК (НАЧАТЬ СНАЧАЛА)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- СКРИПТЫ АСУ ТП -->
-  <script src="/static/js/audio.js?v=1794200000"></script>
-  <script src="/static/js/mimic.js?v=1794200000"></script>
-  <script src="/static/js/chart.js?v=1794200000"></script>
-  <script src="/static/js/app.js?v=1794200000"></script>
+  <script src="/static/js/audio.js?v=1794300000"></script>
+  <script src="/static/js/mimic.js?v=1794300000"></script>
+  <script src="/static/js/chart.js?v=1794300000"></script>
+  <script src="/static/js/app.js?v=1794300000"></script>
 </body>
 </html>

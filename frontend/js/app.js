@@ -16,6 +16,11 @@ class ScadaApp {
     this.chart = new TelemetryChart('trendCanvas');
     this.activeTab = 'controls';
 
+    this.isGameOver = false;
+    this.shatteredGlassEl = null;
+    this.gameOverModalEl = null;
+    this.btnRestartGame = null;
+
     this.fetchInitialState();
     this.initWebSocket();
     this.initEventListeners();
@@ -72,6 +77,10 @@ class ScadaApp {
   }
 
   send(data) {
+    if (this.isGameOver && data.type !== 'reset') {
+      if (window.plantAudio) window.plantAudio.playShortCircuitSpark();
+      return;
+    }
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     }
@@ -113,18 +122,15 @@ class ScadaApp {
 
         // Взрыв оборудования / гидроудар / тепловой разгон / ядерный взрыв
         const isNuclear = Boolean(data.nuclear_detonation || data.explosion_type === 'nuclear');
-        if (data.explosion_active && !this.previousExplosion) {
+        if (isNuclear && !this.isGameOver) {
+          this.triggerNuclearCatastropheGameOver(data);
+        } else if (data.explosion_active && !this.previousExplosion) {
           if (isNuclear) {
-            window.plantAudio.playNuclearDetonation();
-            if (this.mimic) this.mimic.triggerScreenShake(2.5);
+            this.triggerNuclearCatastropheGameOver(data);
           } else {
             window.plantAudio.playExplosionBlast();
             if (this.mimic) this.mimic.triggerScreenShake(1.0);
           }
-        }
-        if (isNuclear && !this.previousNuclearDetonation) {
-          window.plantAudio.playNuclearDetonation();
-          if (this.mimic) this.mimic.triggerScreenShake(2.5);
         }
         this.previousNuclearDetonation = isNuclear;
         this.previousExplosion = Boolean(data.explosion_active);
@@ -475,6 +481,7 @@ class ScadaApp {
   }
 
   initEventListeners() {
+    this.setupGameOverHandlers();
     // Переключение режима люминофора ЭЛТ-монитора (Цвет SCADA / Монохром P-31)
     const btnPhosphor = document.getElementById('btnCrtPhosphor');
     const crtContainer = document.getElementById('mimicContainer');
@@ -830,6 +837,105 @@ class ScadaApp {
     };
     requestAnimationFrame(loop);
   }
+  setupGameOverHandlers() {
+    this.shatteredGlassEl = document.getElementById('crtShatteredGlass');
+    this.gameOverModalEl = document.getElementById('gameOverModal');
+    this.btnRestartGame = document.getElementById('btnRestartGame');
+
+    if (this.btnRestartGame) {
+      this.btnRestartGame.addEventListener('click', () => {
+        this.resetPlantFromGameOver();
+      });
+    }
+
+    // Глобальная блокировка сломанных кнопок при катастрофе
+    document.addEventListener('click', (e) => {
+      if (this.isGameOver) {
+        if (e.target && (e.target.closest('#btnRestartGame') || e.target.id === 'btnRestartGame')) {
+          return; // разрешаем кнопку перезапуска
+        }
+        const clickable = e.target.closest('button, input, select, .pmo-switch, .toggle-switch, .az5-btn');
+        if (clickable) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (window.plantAudio) window.plantAudio.playShortCircuitSpark();
+          this.triggerSparkOnElement(clickable);
+        }
+      }
+    }, true);
+  }
+
+  triggerNuclearCatastropheGameOver(data) {
+    if (this.isGameOver) return;
+    this.isGameOver = true;
+
+    console.log('[SCADA Catastrophe] Ядерная катастрофа! Разрушение пульта и завершение игры...');
+
+    // 1. Сильнейшая сейсмическая тряска экрана
+    if (this.mimic) this.mimic.triggerScreenShake(3.5);
+
+    // 2. Оглушительный процедурный звук детонации
+    if (window.plantAudio) {
+      window.plantAudio.playNuclearDetonation();
+      window.plantAudio.setRadiationLevel(55000);
+    }
+
+    // 3. Через 350 мс: ударная волна достигает монитора — стекло ЭЛТ с треском разбивается
+    setTimeout(() => {
+      if (window.plantAudio) window.plantAudio.playGlassShatter();
+      if (!this.shatteredGlassEl) this.shatteredGlassEl = document.getElementById('crtShatteredGlass');
+      if (this.shatteredGlassEl) this.shatteredGlassEl.classList.add('active');
+    }, 350);
+
+    // 4. Через 650 мс: все кнопки пульта выходят из строя, коробятся и искрят
+    setTimeout(() => {
+      document.body.classList.add('catastrophe-destroyed');
+    }, 650);
+
+    // 5. Через 2.8 с: экранное завершение игры (GameOver модальное окно)
+    setTimeout(() => {
+      if (!this.gameOverModalEl) this.gameOverModalEl = document.getElementById('gameOverModal');
+      if (this.gameOverModalEl) this.gameOverModalEl.classList.add('visible');
+    }, 2800);
+  }
+
+  resetPlantFromGameOver() {
+    console.log('[SCADA Catastrophe] Перезагрузка энергоблока после катастрофы...');
+    this.isGameOver = false;
+    document.body.classList.remove('catastrophe-destroyed');
+
+    if (!this.shatteredGlassEl) this.shatteredGlassEl = document.getElementById('crtShatteredGlass');
+    if (this.shatteredGlassEl) this.shatteredGlassEl.classList.remove('active');
+
+    if (!this.gameOverModalEl) this.gameOverModalEl = document.getElementById('gameOverModal');
+    if (this.gameOverModalEl) this.gameOverModalEl.classList.remove('visible');
+
+    if (window.plantAudio) {
+      window.plantAudio.stopSiren();
+      window.plantAudio.stopSteamBlowout();
+      window.plantAudio.setRadiationLevel(12.0);
+      window.plantAudio.playSwitchClick();
+    }
+
+    if (this.mimic) {
+      this.mimic.nuclearDetonationStart = 0;
+      this.mimic.screenShake = 0;
+    }
+
+    this.send({ type: 'reset' });
+
+    const cover = document.getElementById('az5Cover');
+    if (cover) cover.classList.remove('opened');
+  }
+
+  triggerSparkOnElement(el) {
+    if (!el) return;
+    el.style.boxShadow = '0 0 25px #fef08a, inset 0 0 12px #ffffff';
+    setTimeout(() => {
+      el.style.boxShadow = '';
+    }, 140);
+  }
+
 }
 
 // Запуск при загрузке DOM
